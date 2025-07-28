@@ -1,0 +1,12 @@
+.DS_store
+__pycache__/
+.idea
+.venv
+.env
+build/*
+*.egg-info/
+uv.lock
+poetry.lock
+
+data/*
+!data/.gitignore
