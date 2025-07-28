@@ -9,4 +9,4 @@ uv.lock
 poetry.lock
 
 data/*
-!data/.gitignore
+!data/.gitkeep
