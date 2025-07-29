@@ -28,6 +28,7 @@ class CameraState:
     estimating_exposure: bool = False
     min_exposure: int = XIMEA_MIN_EXPOSURE
     max_exposure: int = XIMEA_MAX_EXPOSURE
+    filename_stem: str = "frame"
     save_subfolder: str | None = None
 
     @property
@@ -66,10 +67,11 @@ def save_frame(
         frame: np.ndarray,
         array_index: int,
         save_folder: Path,
+        filename_stem: str,
         format: str = "envi",
 ):
     if format == "numpy":
-        np.save(file=save_folder / f"frame_{array_index}.npy", arr=frame)
+        np.save(file=save_folder / f"{filename_stem}_{array_index}.npy", arr=frame)
     elif format == "envi":
         # ---- Metadata ----
         wl = [
@@ -78,6 +80,7 @@ def save_frame(
             [655, 660, 680, 700],
             [595, 610, 625, 640],
         ]
+        wl_flat = [w for wa in wl for w in wa] 
         metadata = {
             'samples': frame.shape[1],  # width in pixels
             'lines': frame.shape[0],    # height in pixels
@@ -105,12 +108,12 @@ def save_frame(
             'description': 'Raw 4x4 mosaic snapshot. Each 4×4 tile encodes 16 spectral bands.',
             'filter array size': '4x4',
             'wavelength units': 'Nanometers',
-            'mosaic wavelengths': wl,
-            'note': 'Raw mosaic.'
+            'wavelength': wl_flat,
+            'note': 'Raw mosaic. Wavelengths are listed in row-major order (left to right, top to bottom).'
         }
         spectral.envi.save_image(
-            f'frame_{array_index}.hdr',
-            frame,
+            hdr_file=save_folder / f'{filename_stem}_{array_index}.hdr',
+            image=frame,
             dtype=np.uint8,
             ext=".img",
             force=True,
@@ -130,6 +133,7 @@ def get_images(
     dem = demosaic(arr=frame_normalized)
     tiles = demosaic_tiled(arr=dem)
     return frame_normalized, tiles
+
 
 def find_exposure_for_saturation(
     state: CameraState,
@@ -182,6 +186,7 @@ def update(
         save_frame(
             frame=frame,
             array_index=frame_index,
+            filename_stem=state.filename_stem,
             save_folder=state.save_path,
         )
     if state.estimating_exposure:
@@ -219,7 +224,10 @@ def on_key(event, state: CameraState):
         state.estimating_exposure = True
 
 
-def main_run(exposure: int = 10_000):
+def main_run(
+    exposure: int = 10_000,
+    filename_stem: str = "frame",    
+):
     # Initialize camera
     cam = xiapi.Camera()
     cam.open_device()
@@ -236,12 +244,15 @@ def main_run(exposure: int = 10_000):
     ax.set_title(
         "P to pause/unpause, R to start/stop recording, M to switch view, E for calibrating exposure time."
     )
-
     im = ax.imshow(frame_normalized, cmap="gray")
     
     data_folder = Path(__file__).resolve().parents[1] / "data"
     data_folder.mkdir(parents=False, exist_ok=True)
-    state = CameraState(save_folder=data_folder, current_exposure=exposure)
+    state = CameraState(
+        save_folder=data_folder, 
+        current_exposure=exposure,
+        filename_stem=filename_stem,
+    )
 
     update_fn = partial(update, cam=cam, img=img, im=im, state=state)
     ani = FuncAnimation(fig, update_fn, interval=30, blit=True)
@@ -267,8 +278,18 @@ def main():
         default=10000,
         help="Choose the exposure time in microseconds.",
     )
+    parser.add_argument(
+        "-n",
+        "--name",
+        type=str,
+        default="frame",
+        help="Choose the savefile name.",
+    )
     args = parser.parse_args()
-    main_run(exposure=args.exposure)
+    main_run(
+        exposure=args.exposure,
+        filename_stem=args.name,    
+    )
 
 if __name__ == "__main__":
     main()
