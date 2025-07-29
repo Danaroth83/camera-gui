@@ -15,6 +15,8 @@ XIMEA_MOSAIC_R = 4
 XIMEA_MOSAIC_C = 4
 XIMEA_MIN_EXPOSURE = 100
 XIMEA_MAX_EXPOSURE = 499_950
+XIMEA_DYN_RANGE_10BIT = 1023
+XIMEA_DYN_RANGE_8BIT = 255
 
 
 @dataclass
@@ -41,7 +43,7 @@ class CameraState:
     
     @property
     def dynamic_range(self):
-        return 1023 if self.bit_depth_max else 255
+        return XIMEA_DYN_RANGE_10BIT if self.bit_depth_max else XIMEA_DYN_RANGE_8BIT
 
 def demosaic(arr: np.ndarray) -> np.ndarray:
     out = np.empty(
