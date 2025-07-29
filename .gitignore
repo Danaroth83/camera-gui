@@ -10,3 +10,5 @@ poetry.lock
 
 data/*
 !data/.gitkeep
+!data/plate_design
+!data/plate_design/**
