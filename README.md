@@ -154,6 +154,9 @@ From the visualization applet, you can:
 
 The repository also contains some 3d designs for a plate to mount a camera
 over a standard tripod in the folder `data\plate_design`.
+The plate was designed for a combined acquisition with a companion camera
+from Imagingsource model DFK 23UK236.
+
 The folder contains:
 - The original measurement design: `cameras_94mm_v2.pdf`
 - A 2d draft for lasercuts: `plate_design.pdf`
