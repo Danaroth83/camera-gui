@@ -10,6 +10,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+XIMEA_MOSAIC_R = 4
+XIMEA_MOSAIC_C = 4
+XIMEA_MIN_EXPOSURE = 100
+XIMEA_MAX_EXPOSURE = 499_950
+XIMEA_DYNRANGE = 255
 
 @dataclass
 class CameraState:
@@ -19,8 +24,8 @@ class CameraState:
     demosaic: bool = False
     record: bool = False
     estimating_exposure: bool = False
-    min_exposure: int = 100
-    max_exposure: int = 1_000_000
+    min_exposure: int = XIMEA_MIN_EXPOSURE
+    max_exposure: int = XIMEA_MAX_EXPOSURE
     save_subfolder: str | None = None
 
     @property
@@ -31,21 +36,32 @@ class CameraState:
             return self.save_folder / self.save_subfolder
 
 def demosaic(arr: np.ndarray) -> np.ndarray:
-    out = np.empty((arr.shape[0] // 4, arr.shape[1] // 4, 16), dtype=arr.dtype)
-    for ii in range(4):
-        for jj in range(4):
-            out[:, :, jj + 4 * ii] = arr[ii::4, jj::4]
+    out = np.empty(
+        (
+            arr.shape[0] // XIMEA_MOSAIC_R, 
+            arr.shape[1] // XIMEA_MOSAIC_C, 
+            XIMEA_MOSAIC_R * XIMEA_MOSAIC_C,
+        ), 
+        dtype=arr.dtype,
+    )
+    for ii in range(XIMEA_MOSAIC_R):
+        for jj in range(XIMEA_MOSAIC_C):
+            out[:, :, jj + XIMEA_MOSAIC_R * ii] = arr[ii::XIMEA_MOSAIC_R, jj::XIMEA_MOSAIC_R]
     return out
 
 def demosaic_tiled(arr: np.ndarray):
-    bands = arr.transpose(2, 0, 1).reshape(4, 4, arr.shape[0], arr.shape[1])
-    return np.block([[bands[i, j] for j in range(4)] for i in range(4)])
+    bands = arr.transpose(2, 0, 1)
+    bands = bands.reshape(XIMEA_MOSAIC_R, XIMEA_MOSAIC_C, arr.shape[0], arr.shape[1])
+    return np.block([
+        [bands[i, j] for j in range(XIMEA_MOSAIC_C)] 
+        for i in range(XIMEA_MOSAIC_R)
+    ])
 
 def get_images(
     frame: np.ndarray, 
     demosaic_flag: bool,
 ) -> tuple[np.ndarray, np.ndarray]:
-    frame_normalized = np.array(frame, dtype=np.float32) / 255
+    frame_normalized = np.array(frame, dtype=np.float32) / XIMEA_DYNRANGE
     if not demosaic_flag:
         return frame_normalized, frame_normalized
     dem = demosaic(arr=frame_normalized)
@@ -56,24 +72,24 @@ def find_exposure_for_saturation(
     state: CameraState,
     frame: np.ndarray,
     max_saturation: int = 8000,
-    tol: int = 100,  # tolerated difference in number of saturated pixels
-) -> tuple[int, bool]:
+    tol: int = 1000,  # tolerated difference in number of saturated pixels
+) -> bool:
     """
     Binary search for exposure time to keep saturated pixels under max_saturation.
     """
 
     converged = False
-    saturated = (frame >= 255).sum()
-    best_exposure = state.current_exposure
-    mid_exposure = (state.max_exposure - state.min_exposure) // 2
+    saturated = (frame >= XIMEA_DYNRANGE).sum()
+    mid_exposure = (state.max_exposure + state.min_exposure) // 2
     if saturated > max_saturation:
-        state.max_exposure = state.current_exposure - 1
+        state.max_exposure = mid_exposure - 1
     else:
-        best_exposure = mid_exposure
-        state.min_exposure = state.current_exposure + 1
-    if abs(saturated - max_saturation) < tol:
+        state.min_exposure = mid_exposure + 1
+    tmp = state.max_exposure - state.min_exposure 
+    state.current_exposure = (state.max_exposure + state.min_exposure) // 2 
+    if abs(saturated - max_saturation) < tol or abs(tmp) < 10:
         converged = True
-    return best_exposure, converged
+    return converged
 
 
 def update(
@@ -85,6 +101,9 @@ def update(
 ):
     if state.estimating_exposure:
         cam.set_exposure(state.current_exposure)
+        print(f"Min: {state.min_exposure}, Max: {state.max_exposure}")
+        print(f"Exposure set to {state.current_exposure} us")
+
     cam.get_image(img)
     frame = img.get_image_data_numpy()
     frame_normalized, demosaiced = get_images(
@@ -99,11 +118,13 @@ def update(
     if state.record and state.save_path is not None:
         savefile = state.save_path / f"frame_{frame_index}.npy"
         np.save(file=f"{savefile}", arr=frame)
+
     if state.estimating_exposure:
-        state.current_exposure, state.estimating_exposure = find_exposure_for_saturation(
+        converged = find_exposure_for_saturation(
             state=state,
             frame=frame,
         )
+        state.estimating_exposure = not converged
     return [im]
 
 
@@ -127,10 +148,11 @@ def on_key(event, state: CameraState):
         else:
             print("Stopped recording")
     if event.key == "e":
-        state.min_exposure = 100
-        state.max_exposure = 1_000_000
-        state.current_exposure = (state.max_exposure - state.min_exposure) // 2
+        state.min_exposure = XIMEA_MIN_EXPOSURE
+        state.max_exposure = XIMEA_MAX_EXPOSURE
+        state.current_exposure = (state.max_exposure + state.min_exposure) // 2
         state.estimating_exposure = True
+
 
 def main_run(exposure: int = 10_000):
     # Initialize camera
