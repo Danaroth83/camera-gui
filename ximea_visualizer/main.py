@@ -17,6 +17,9 @@ cam = xiapi.Camera()
 #(open by serial number)
 print('Opening first camera...')
 cam.open_device()
+print(cam.get_imgdataformat())
+cam.set_imgdataformat("XI_MONO16")
+cam.set_image_data_bit_depth("XI_BPP_10")
 
 #settings
 cam.set_exposure(10000)
@@ -49,7 +52,9 @@ for i in range(10):
     np.save(output_folder / f"image_{i}.npy", arr=a)
     np.save(output_folder / f"demosaic_{i}.npy", arr=out)
 
-    a_normalized = np.array(a, dtype=np.float32) / (2 ** 8 - 1)
+    print(f"Max value {a.max()}")
+
+    a_normalized = np.array(a, dtype=np.float32) / (2 ** 10 - 1)
     out_normalized = np.empty((a.shape[0] // 4, a.shape[1] // 4, 16), dtype=a_normalized.dtype)
     for ii in range(4):
         for jj in range(4):

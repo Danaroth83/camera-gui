@@ -15,7 +15,6 @@ XIMEA_MOSAIC_R = 4
 XIMEA_MOSAIC_C = 4
 XIMEA_MIN_EXPOSURE = 100
 XIMEA_MAX_EXPOSURE = 499_950
-XIMEA_DYNRANGE = 255
 
 
 @dataclass
@@ -25,10 +24,12 @@ class CameraState:
     paused: bool = False
     demosaic: bool = False
     record: bool = False
+    bit_depth_selector: bool = False
     estimating_exposure: bool = False
     min_exposure: int = XIMEA_MIN_EXPOSURE
     max_exposure: int = XIMEA_MAX_EXPOSURE
     filename_stem: str = "frame"
+    bit_depth_max: bool = False
     save_subfolder: str | None = None
 
     @property
@@ -37,6 +38,10 @@ class CameraState:
             return None
         else:
             return self.save_folder / self.save_subfolder
+    
+    @property
+    def dynamic_range(self):
+        return 1023 if self.bit_depth_max else 255
 
 def demosaic(arr: np.ndarray) -> np.ndarray:
     out = np.empty(
@@ -64,11 +69,12 @@ def demosaic_tiled(arr: np.ndarray):
     return np.block(out)
 
 def save_frame(
-        frame: np.ndarray,
-        array_index: int,
-        save_folder: Path,
-        filename_stem: str,
-        format: str = "envi",
+    state: CameraState,
+    frame: np.ndarray,
+    array_index: int,
+    save_folder: Path,
+    filename_stem: str,
+    format: str = "envi",
 ):
     if format == "numpy":
         np.save(file=save_folder / f"{filename_stem}_{array_index}.npy", arr=frame)
@@ -81,20 +87,22 @@ def save_frame(
             [595, 610, 625, 640],
         ]
         wl_flat = [w for wa in wl for w in wa] 
+        data_type = 12 if state.bit_depth_max else 1
+        bit_depth = "10 bits" if state.bit_depth_max else "8 bits"
         metadata = {
             'samples': frame.shape[1],  # width in pixels
             'lines': frame.shape[0],    # height in pixels
             'bands': 1,                 # raw mosaic has one band
             'interleave': 'bsq',
             'byte order': 0,            # little endian (0)
-            'data type': 1,             # 1 = uint8
+            'data type': data_type,      # 1 = uint8, 12 = uint16
             'sensor type': 'XIMEA MQ02HG-IM-SM4x4',
 
             'spatial resolution': '512 x 272 (per band, SNm4x4 VIS version)',
             'spectral resolution': '~10-15 nm (collimated)',
             'spectral range': '460-620 nm (SNm4x4 VIS version), 595-860 nm (SNm4x4 RedNIR version)',
             'bands count': '16 bands',
-            'bit depth': '8 bits',
+            'bit depth': bit_depth,
             'pixel pitch': '5.5 μm',
             'imager type': 'CMOS, CMOSIS CMV2000 based',
             'acquisition speed': 'up to 120 hyperspectral cubes/second (USB3.0 limited)',
@@ -126,8 +134,9 @@ def save_frame(
 def get_images(
     frame: np.ndarray, 
     demosaic_flag: bool,
+    dynamic_range: int,
 ) -> tuple[np.ndarray, np.ndarray]:
-    frame_normalized = np.array(frame, dtype=np.float32) / XIMEA_DYNRANGE
+    frame_normalized = np.array(frame, dtype=np.float32) / dynamic_range
     if not demosaic_flag:
         return frame_normalized, frame_normalized
     dem = demosaic(arr=frame_normalized)
@@ -146,7 +155,7 @@ def find_exposure_for_saturation(
     """
 
     converged = False
-    saturated = (frame >= XIMEA_DYNRANGE).sum()
+    saturated = (frame >= state.dynamic_range).sum()
     mid_exposure = (state.max_exposure + state.min_exposure) // 2
     if saturated > max_saturation:
         state.max_exposure = mid_exposure - 1
@@ -159,6 +168,21 @@ def find_exposure_for_saturation(
     return converged
 
 
+def switch_bit_depth(
+    cam: xiapi.Camera,
+    state: CameraState,
+) -> None:
+    if state.bit_depth_max:
+        cam.set_imgdataformat("XI_MONO8")
+        cam.set_image_data_bit_depth("XI_BPP_8")
+        state.bit_depth_max = False
+        print("Changed to 8 bits")
+    else:
+        cam.set_imgdataformat("XI_MONO16")
+        cam.set_image_data_bit_depth("XI_BPP_10")
+        state.bit_depth_max = True
+        print("Changed to 10 bits")
+
 def update(
     frame_index: int,
     state: CameraState,
@@ -166,6 +190,9 @@ def update(
     img: xiapi.Image,
     im: Any, 
 ):
+    if state.bit_depth_selector:
+        switch_bit_depth(cam=cam, state=state)
+        state.bit_depth_selector = False
     if state.estimating_exposure:
         cam.set_exposure(state.current_exposure)
         print(f"Min: {state.min_exposure}, Max: {state.max_exposure}")
@@ -176,6 +203,7 @@ def update(
     frame_normalized, demosaiced = get_images(
         frame=frame,
         demosaic_flag=state.demosaic,
+        dynamic_range=state.dynamic_range,
     )
     if not state.paused:
         if not state.demosaic:
@@ -208,6 +236,8 @@ def on_key(event, state: CameraState):
             print("Switched to demosaic view.")
         else:
             print("Switched to raw view.")
+    if event.key == "b":
+        state.bit_depth_selector = True
     if event.key == "r":
         state.record = not state.record
         if state.record:
@@ -222,6 +252,7 @@ def on_key(event, state: CameraState):
         state.max_exposure = XIMEA_MAX_EXPOSURE
         state.current_exposure = (state.max_exposure + state.min_exposure) // 2
         state.estimating_exposure = True
+    
 
 
 def main_run(
@@ -235,17 +266,7 @@ def main_run(
     cam.start_acquisition()
     img  = xiapi.Image()
 
-
-    # Initial frame
-    fig, ax = plt.subplots()
-    cam.get_image(img)
-    frame = img.get_image_data_numpy()
-    frame_normalized, _ = get_images(frame=frame, demosaic_flag=False)
-    ax.set_title(
-        "P to pause/unpause, R to start/stop recording, M to switch view, E for calibrating exposure time."
-    )
-    im = ax.imshow(frame_normalized, cmap="gray")
-    
+    # Setting initial state
     data_folder = Path(__file__).resolve().parents[1] / "data"
     data_folder.mkdir(parents=False, exist_ok=True)
     state = CameraState(
@@ -253,6 +274,19 @@ def main_run(
         current_exposure=exposure,
         filename_stem=filename_stem,
     )
+
+    # Initial frame
+    switch_bit_depth(cam=cam, state=state)
+    cam.get_image(img)
+    fig, ax = plt.subplots()
+    frame = img.get_image_data_numpy()
+    frame_normalized, _ = get_images(frame=frame, demosaic_flag=False, dynamic_range=state.dynamic_range)
+    ax.set_title(
+        "P to pause/unpause, R to start/stop recording, M to switch view,\n"+
+        "E for calibrating exposure time, B to change bit depth."
+    )
+    im = ax.imshow(frame_normalized, cmap="gray")
+
 
     update_fn = partial(update, cam=cam, img=img, im=im, state=state)
     ani = FuncAnimation(fig, update_fn, interval=30, blit=True)
