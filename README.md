@@ -25,6 +25,8 @@ In the `UEFI` menu, choose `Secure Boot` and select `Disabled`.
 
 ## XIMEA API installation
 
+### Introduction
+
 This software instructions are intended for a Linux x86 machine user.
 For Windows/MacOS, please consult the official guide for installing
 the XIMEA software package available at:
@@ -47,8 +49,7 @@ if it is based on the PCIE protocol.
 
 Then, restart your PC.
 
-
-## Testing the connection
+### Testing the connection
 
 You should first show if the camera is recognized by the USB port:
 ```bash
@@ -81,7 +82,7 @@ If this has not worked, please try:
   sudo .\install
   ```
 
-## Testing the camera connection
+### Testing the camera connection
 
 The ximea API provides some simplified script to test the connection;
 it should look something like this:
@@ -108,6 +109,39 @@ and typing:
 
 ```bash
 sudo echo 0 > /sys/module/usbcore/parameters/usbfs_memory_mb
+```
+
+## TIS installation
+
+The camera The Imaging Source (TIS) model DFK 23UX236 reached end of life service.
+First, test if the camera is discoverable through USB3:
+```bash
+lsusb
+```
+and you should get a message such as:
+```
+Bus 004 Device 003: ID 199e:841a The Imaging Source Europe GmbH DFK 23UX236
+```
+
+The camera is non-Genicam (V4L2), so you need to go to this page:
+<https://www.theimagingsource.com/en-us/support/download/ic4gentlprodv4l2-1.0.0.144/>
+and select the Linux-AMD driver. Once downloaded, install it through `dpkg`
+(Note: the filename may be different for you):
+
+```bash
+sudo dpkg -i ic4-gentl-driver-v4l2_1.0.0.144_amd64.deb
+```
+
+Then install the Imaging Control 4:
+```bash
+pip install imagingcontrol4
+```
+
+and test it with a sample Python code:
+```python
+import imagingcontrol4 as ic4
+ic4.Library.init()
+ic4.DeviceEnum.devices()
 ```
 
 ## Script testing
