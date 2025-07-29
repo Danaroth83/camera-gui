@@ -85,6 +85,8 @@ If this has not worked, please try:
 The ximea API provides some simplified script to test the connection;
 it should look something like this:
 ```python
+from ximea import xiapi
+
 cam = xiapi.Camera()
 cam.open_device()
 cam.set_exposure(10_000)
@@ -120,11 +122,16 @@ pip install matplotlib
 pip install pyqt5
 ```
 
+For visualization, you may also need to install this library:
+```bash
+sudo apt install libxcb-xinerama0
+```
+
 
 From this moment on you should be able to connect the camera through USB to
 your machine and type:
 ```bash
-python src/visualization.py -e 10000 
+python ximea_visualizer/visualization.py
 ```
 
 where 10000 is the requested exposure time (10 seconds in this case).
@@ -132,6 +139,15 @@ From the visualization applet, you can:
 - Press P to pause/unpause.
 - Press M to switch between mosaiced and demosaiced view and viceversa.
 - Press R to start/stop recording frames to data/[timestamp].
+- Press E to estimate the exposure time via binary search
+  - Keep the camera still while estimating.
+  - This is an experimental feature, so it may fail.
+  - Press E again to restart the estimation in case of failure.
+  - You may want to rerun the script with the estimated exposure time, e.g. 
+    for 10000 microseconds:
+    ```bash
+    python ximea_visualizer/visualization.py -e 10000
+    ```
 - To exit, just close the visualization applet.
 
 

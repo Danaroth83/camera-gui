@@ -178,7 +178,7 @@ def main():
         "--exposure",
         type=int,
         default=10000,
-        help="Choose the exposure time in milliseconds.",
+        help="Choose the exposure time in microseconds.",
     )
     args = parser.parse_args()
     main_run(exposure=args.exposure)
