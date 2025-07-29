@@ -27,12 +27,12 @@ In the `UEFI` menu, choose `Secure Boot` and select `Disabled`.
 
 ### Introduction
 
-This software instructions are intended for a Linux x86 machine user.
+This software instructions are intended for a Linux x86 machine user.  
 For Windows/MacOS, please consult the official guide for installing
-the XIMEA software package available at:
+the XIMEA software package available at:  
 <https://www.ximea.com/support/wiki/apis/APIs>
 
-Download the software package for Linux available at:
+Download the software package for Linux available at:  
 <https://www.ximea.com/software-downloads>
 
 and select `Linux x86 Software Package Beta`.
@@ -82,7 +82,7 @@ If this has not worked, please try:
   sudo .\install
   ```
 
-### Testing the camera connection
+### Testing the camera API
 
 The ximea API provides some simplified script to test the connection;
 it should look something like this:
@@ -111,7 +111,9 @@ and typing:
 sudo echo 0 > /sys/module/usbcore/parameters/usbfs_memory_mb
 ```
 
-## TIS installation
+## TIS API installation
+
+### Introduction
 
 The camera The Imaging Source (TIS) model DFK 23UX236 reached end of life service.
 First, test if the camera is discoverable through USB3:
@@ -123,7 +125,7 @@ and you should get a message such as:
 Bus 004 Device 003: ID 199e:841a The Imaging Source Europe GmbH DFK 23UX236
 ```
 
-The camera is non-Genicam (V4L2), so you need to go to this page:
+The camera is non-Genicam (V4L2), so you need to go to this page:  
 <https://www.theimagingsource.com/en-us/support/download/ic4gentlprodv4l2-1.0.0.144/>
 and select the Linux-AMD driver. Once downloaded, install it through `dpkg`
 (Note: the filename may be different for you):
@@ -131,6 +133,8 @@ and select the Linux-AMD driver. Once downloaded, install it through `dpkg`
 ```bash
 sudo dpkg -i ic4-gentl-driver-v4l2_1.0.0.144_amd64.deb
 ```
+
+### Testing the camera API
 
 Then install the Imaging Control 4:
 ```bash
@@ -170,10 +174,17 @@ python ximea_visualizer/visualization.py
 ```
 
 where 10000 is the requested exposure time (10 seconds in this case).
-From the visualization applet, you can:
+From the visualization applet, you can (while within the scope of the figure):
 - Press P to pause/unpause.
 - Press M to switch between mosaiced and demosaiced view and viceversa.
+- Press B to switch between 10 bits/8 bits acquisition
 - Press R to start/stop recording frames to data/[timestamp].
+  - Remember to press R again or the acquisitions will continue indefinitely.
+  - You can select the savefile name by running the script with the `-n` 
+    argument. E.g., to save as `dark` within the save folder:
+    ```bash
+    python ximea_visualizer/visualization.py -n dark
+    ```
 - Press E to estimate the exposure time via binary search
   - Keep the camera still while estimating.
   - This is an experimental feature, so it may fail.
@@ -189,8 +200,9 @@ From the visualization applet, you can:
 
 The repository also contains some 3d designs for a plate to mount a camera
 over a standard tripod in the folder `data\plate_design`.
-The plate was designed for a combined acquisition with a companion camera
-from Imagingsource model DFK 23UK236.
+The plate was designed for a combined acquisition of two companion cameras:
+- XIMEA model MQ02HG-IM-SM4x4.
+- The Imaging Source (TIS) model DFK 23UK236.
 
 The folder contains:
 - The original measurement design: `cameras_94mm_v2.pdf`
@@ -199,8 +211,8 @@ The folder contains:
 - An STL conversion for 3d printing: `scaled_holed_plate.stl`
 - The sliced version for the Flashforge 3d printer: `scaled_holed_plate.gx`
 
-The original design `cameras_94mm_v2.pdf` was made by:
-- Kuniaki Uto <uto@wise-sss.titech.ac.jp>
+The design `cameras_94mm_v2.pdf` was originally made by:
+- Kuniaki Uto [uto@wise-sss.titech.ac.jp](mailto:uto@wise-sss.titech.ac.jp)
 
 
 ## Developer
