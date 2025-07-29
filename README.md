@@ -1,6 +1,7 @@
 # Introduction
 
-This code was originally produced for a user-friendly Python interface with the XIMEA camera MQ02HG-IM-SM4x4.
+This code was originally produced for a user-friendly Python interface with the 
+XIMEA camera model MQ02HG-IM-SM4x4.
 
 The camera is a mosaic based camera with a 4x4 color filter array pattern operating in the RED/NIR wavelength range.
 
@@ -16,7 +17,7 @@ The provided code allows to:
 ## Prerequisites
 
 For this tutorial, you require a Linux machine running on x86 with `root`
-priviledges.
+privileges.
 
 Before installing, you may need to change the security level of your UEFI/BIOS.
 Restart your PC and go to the `UEFI/BIOS firmware` installation (typically by pressing Esc, F2, or Del at restart).

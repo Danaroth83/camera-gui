@@ -9,6 +9,7 @@ dependencies = [
     "matplotlib>=3.10.3",
     "numpy>=2.3.2",
     "pyqt5>=5.15.11; sys_platform=='linux'",
+    "spectral>=0.24",
 ]
 
 [project.optional-dependencies]

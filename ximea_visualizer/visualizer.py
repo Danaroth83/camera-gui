@@ -9,12 +9,14 @@ from ximea import xiapi
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import spectral
 
 XIMEA_MOSAIC_R = 4
 XIMEA_MOSAIC_C = 4
 XIMEA_MIN_EXPOSURE = 100
 XIMEA_MAX_EXPOSURE = 499_950
 XIMEA_DYNRANGE = 255
+
 
 @dataclass
 class CameraState:
@@ -46,16 +48,77 @@ def demosaic(arr: np.ndarray) -> np.ndarray:
     )
     for ii in range(XIMEA_MOSAIC_R):
         for jj in range(XIMEA_MOSAIC_C):
-            out[:, :, jj + XIMEA_MOSAIC_R * ii] = arr[ii::XIMEA_MOSAIC_R, jj::XIMEA_MOSAIC_R]
+            idx = jj + XIMEA_MOSAIC_C * (XIMEA_MOSAIC_R - 1 - ii)
+            out[:, :, idx] = arr[ii::XIMEA_MOSAIC_R, jj::XIMEA_MOSAIC_R]
     return out
 
 def demosaic_tiled(arr: np.ndarray):
-    bands = arr.transpose(2, 0, 1)
-    bands = bands.reshape(XIMEA_MOSAIC_R, XIMEA_MOSAIC_C, arr.shape[0], arr.shape[1])
-    return np.block([
-        [bands[i, j] for j in range(XIMEA_MOSAIC_C)] 
-        for i in range(XIMEA_MOSAIC_R)
-    ])
+    out = []
+    for ii in range(XIMEA_MOSAIC_R):
+        out_list = []
+        for jj in range(XIMEA_MOSAIC_C):
+            idx = jj + XIMEA_MOSAIC_C * (XIMEA_MOSAIC_R - 1 - ii)
+            out_list.append(arr[:, :, idx])
+        out.append(out_list)
+    return np.block(out)
+
+def save_frame(
+        frame: np.ndarray,
+        array_index: int,
+        save_folder: Path,
+        format: str = "envi",
+):
+    if format == "numpy":
+        np.save(file=save_folder / f"frame_{array_index}.npy", arr=frame)
+    elif format == "envi":
+        # ---- Metadata ----
+        wl = [
+            [800, 820, 840, 860],
+            [720, 740, 760, 780],
+            [655, 660, 680, 700],
+            [595, 610, 625, 640],
+        ]
+        metadata = {
+            'samples': frame.shape[1],  # width in pixels
+            'lines': frame.shape[0],    # height in pixels
+            'bands': 1,                 # raw mosaic has one band
+            'interleave': 'bsq',
+            'byte order': 0,            # little endian (0)
+            'data type': 1,             # 1 = uint8
+            'sensor type': 'XIMEA MQ02HG-IM-SM4x4',
+
+            'spatial resolution': '512 x 272 (per band, SNm4x4 VIS version)',
+            'spectral resolution': '~10-15 nm (collimated)',
+            'spectral range': '460-620 nm (SNm4x4 VIS version), 595-860 nm (SNm4x4 RedNIR version)',
+            'bands count': '16 bands',
+            'bit depth': '8 bits',
+            'pixel pitch': '5.5 μm',
+            'imager type': 'CMOS, CMOSIS CMV2000 based',
+            'acquisition speed': 'up to 120 hyperspectral cubes/second (USB3.0 limited)',
+            'optics': '16/25/35/50 mm lenses, F2.8, C-mount',
+            'interface': 'USB3.0 + GPIO + I/O for triggering',
+            'power consumption': '1.6 Watt',
+            'dimensions': '26 x 26 x 31 mm',
+            'weight': '32 g (without optics)',
+
+            'acquisition time': datetime.now().isoformat(),
+            'description': 'Raw 4x4 mosaic snapshot. Each 4×4 tile encodes 16 spectral bands.',
+            'filter array size': '4x4',
+            'wavelength units': 'Nanometers',
+            'mosaic wavelengths': wl,
+            'note': 'Raw mosaic.'
+        }
+        spectral.envi.save_image(
+            f'frame_{array_index}.hdr',
+            frame,
+            dtype=np.uint8,
+            ext=".img",
+            force=True,
+            interleave='bsq',
+            metadata=metadata,
+        )
+    else:
+        raise ValueError(f"File format {format} unknown.")
 
 def get_images(
     frame: np.ndarray, 
@@ -116,9 +179,11 @@ def update(
         else:
             im.set_data(demosaiced)
     if state.record and state.save_path is not None:
-        savefile = state.save_path / f"frame_{frame_index}.npy"
-        np.save(file=f"{savefile}", arr=frame)
-
+        save_frame(
+            frame=frame,
+            array_index=frame_index,
+            save_folder=state.save_path,
+        )
     if state.estimating_exposure:
         converged = find_exposure_for_saturation(
             state=state,
