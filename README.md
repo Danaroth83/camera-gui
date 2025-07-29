@@ -150,5 +150,24 @@ From the visualization applet, you can:
     ```
 - To exit, just close the visualization applet.
 
+## Plate designs
+
+The repository also contains some 3d designs for a plate to mount a camera
+over a standard tripod in the folder `data\plate_design`.
+The folder contains:
+- The original measurement design: `cameras_94mm_v2.pdf`
+- A 2d draft for lasercuts: `plate_design.pdf`
+- Blender 3d renders for the machine: `scaled_holed_plate.blend`
+- An STL conversion for 3d printing: `scaled_holed_plate.stl`
+- The sliced version for the Flashforge 3d printer: `scaled_holed_plate.gx`
+
+The original design `cameras_94mm_v2.pdf` was made by:
+- Kuniaki Uto <uto@wise-sss.titech.ac.jp>
 
 
+## Developer
+
+Daniele Picone  
+Univ. Grenoble Alpes, CNRS, Grenoble INP, GIPSA-lab, 38000 Grenoble, France  
+Work mail: [daniele.picone@grenoble-inp.fr](mailto:daniele.picone@grenoble-inp.fr)  
+Personal mail: [danaroth83@gmail.com](mailto:danaroth83@gmail.com)  
