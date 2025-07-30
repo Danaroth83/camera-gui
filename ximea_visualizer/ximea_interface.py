@@ -184,12 +184,12 @@ def switch_bit_depth(
     if state.bit_depth_max:
         cam.set_imgdataformat("XI_MONO8")
         cam.set_image_data_bit_depth("XI_BPP_8")
-        state.bit_depth_max = False
+        state.bit_depth_10bits = False
         print("Changed to 8 bits")
     else:
         cam.set_imgdataformat("XI_MONO16")
         cam.set_image_data_bit_depth("XI_BPP_10")
-        state.bit_depth_max = True
+        state.bit_depth_10bits = True
         print("Changed to 10 bits")
 
 

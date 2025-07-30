@@ -124,7 +124,7 @@ class VideoPlayer(QWidget):
         self.bit_depth_button.SetText(f"Toggle bit depth: {camera.bit_depth()}")
 
     def toggle_recording(self):
-        if not self.state.running or self.state.paused:
+        if (not self.state.running) or self.state.paused:
             return
         self.state.recording = not self.state.recording
         if self.state.recording:
@@ -163,7 +163,7 @@ class VideoPlayer(QWidget):
         return QPixmap.fromImage(qimg.copy())
 
     def update_frame(self):
-        if not self.state.running:
+        if (not self.state.running) or self.state.paused:
             return
         if self.state.estimating_exposure:
             self.camera.adjust_exposure()
