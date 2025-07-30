@@ -256,16 +256,23 @@ def on_key(event, state: CameraState):
         state.estimating_exposure = True
 
 
-def main_run(
+def init_camera(
     exposure: int = 10_000,
-    filename_stem: str = "frame",    
-):
+) -> tuple[xiapi.Camera, xiapi.Image]:
     # Initialize camera
     cam = xiapi.Camera()
     cam.open_device()
     cam.set_exposure(exposure)
     cam.start_acquisition()
     img  = xiapi.Image()
+    return cam, img
+
+
+def main_run(
+    exposure: int = 10_000,
+    filename_stem: str = "frame",    
+):
+    cam, img = init_camera(exposure=exposure)
 
     # Setting initial state
     data_folder = Path(__file__).resolve().parents[1] / "data"
