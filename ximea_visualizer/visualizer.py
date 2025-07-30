@@ -214,6 +214,7 @@ def update(
             im.set_data(demosaiced)
     if state.record and state.save_path is not None:
         save_frame(
+            state=state,
             frame=frame,
             array_index=frame_index,
             filename_stem=state.filename_stem,
