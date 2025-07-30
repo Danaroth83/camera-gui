@@ -78,6 +78,7 @@ class Camera(ABC):
             frame=frame,
             save_folder=self.save_folder(),
             filename_stem=filename_stem,
+            envi_options=self.get_envi_options(),
             fmt=fmt,
         )
 
@@ -165,9 +166,9 @@ class MockCamera(Camera):
 
     def set_save_subfolder(self, subfolder: str) -> None:
         self._subfolder = subfolder
+        self.save_folder().mkdir(parents=False, exist_ok=True)
 
     def save_folder(self):
         if self._subfolder is None:
             return self._save_folder
         return self._save_folder / self._subfolder
-
