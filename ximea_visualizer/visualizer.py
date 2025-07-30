@@ -255,7 +255,6 @@ def on_key(event, state: CameraState):
         state.max_exposure = XIMEA_MAX_EXPOSURE
         state.current_exposure = (state.max_exposure + state.min_exposure) // 2
         state.estimating_exposure = True
-    
 
 
 def main_run(
