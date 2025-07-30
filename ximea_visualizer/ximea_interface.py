@@ -200,7 +200,7 @@ class XimeaCamera(Camera):
 
     def __init__(self):
         self.cam = xiapi.Camera()
-        self.img = xiapi.Image()
+        self.img = None
         data_path = Path(__file__).resolve().parents[1] / "data"
         data_path.mkdir(parents=False, exist_ok=True)
         data_path = data_path / "ximea"
@@ -215,6 +215,7 @@ class XimeaCamera(Camera):
         self.cam.open_device()
         self.set_exposure(exposure)
         self.cam.start_acquisition()
+        self.img = xiapi.Image()
         self.state.sync(cam=self.cam)
 
     def close(self):
@@ -228,6 +229,8 @@ class XimeaCamera(Camera):
         return self.state.bit_depth
 
     def get_frame(self) -> tuple[np.ndarray, np.ndarray]:
+        if self.img is None:
+            raise ValueError("Camera was not opened. Run self.open() before this operation.")
         return get_frame(
             cam=self.cam,
             img=self.img,
