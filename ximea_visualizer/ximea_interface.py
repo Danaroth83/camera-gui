@@ -280,7 +280,7 @@ class XimeaCamera(Camera):
         return self.state.save_path
 
     def toggle_view(self):
-        self.state.demosaic = False if self.state.demosaic else True
+        self.state.demosaic = not self.state.demosaic
 
     def exception_type(self) -> Exception:
         return xiapi.Xi_error

@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 import imagingcontrol4 as ic4
+from PyQt6.QtCore.QProcess import state
 
 from ximea_visualizer.paths import load_project_dir
 
@@ -33,24 +35,71 @@ PIXEL_FORMAT_TO_SHAPE = {
     ic4.PixelFormat.BayerGB16: (TIS_HEIGHT, TIS_WIDTH, 1),
 }
 
+PIXEL_FORMAT_TO_ENVI_FORMAT = {
+    ic4.PixelFormat.Mono8: 1,
+    ic4.PixelFormat.BayerGB8: 1,
+    ic4.PixelFormat.BayerGB16: 12,
+}
+
+
 @dataclass
 class TisCameraState:
     save_folder: Path
     current_exposure: int
     pixel_format: ic4.PixelFormat = ic4.PixelFormat.BayerGB16
+    demosaic: bool = False
     save_subfolder: str | None = None
     timeout_ms: int = 1000
 
     @property
-    def save_path(self) -> Path:
+    def save_path(self) -> Path | None:
         if self.save_subfolder is None:
-            return self.save_folder
+            return None
         else:
             return self.save_folder / self.save_subfolder
 
     def bit_depth(self) -> int:
         bit_depth = PIXEL_FORMAT_TO_BIT_DEPTH_MAP[self.pixel_format]
         return bit_depth
+
+
+def get_envi_header(state: TisCameraState) -> dict:
+    wl = [  # GB (Green-Blue) config
+        [550, 450],
+        [650, 550],
+    ]
+    wl_flat = [w for wa in wl for w in wa]
+    envi_data_type = PIXEL_FORMAT_TO_ENVI_FORMAT[state.pixel_format]
+    bit_depth = f"{state.bit_depth()} bits"
+    return {
+        'samples': TIS_WIDTH,  # width in pixels
+        'lines': TIS_HEIGHT,  # height in pixels
+        'bands': 1,  # raw mosaic has one band
+        'interleave': 'bsq',
+        'byte order': 0,  # little endian (0)
+        'data type': envi_data_type,  # 1 = uint8, 12 = uint16
+        'sensor type': 'The Imaging Source DFK 23UX236',
+
+        'spatial resolution': '1920 x 1200',
+        'spectral range': '450-650 nm',
+        'bands count': '3 bands',
+        'bit depth': bit_depth,
+        # 'pixel pitch': '5.5 μm',
+        # 'imager type': 'CMOS, CMOSIS CMV2000 based',
+        # 'acquisition speed': 'up to 120 hyperspectral cubes/second (USB3.0 limited)',
+        # 'optics': '16/25/35/50 mm lenses, F2.8, C-mount',
+        'interface': 'USB3.0 + GPIO + I/O for triggering',
+        # 'power consumption': '1.6 Watt',
+        # 'dimensions': '26 x 26 x 31 mm',
+        # 'weight': '32 g (without optics)',
+
+        'acquisition time': datetime.now().isoformat(),
+        'description': 'Bayer mosaic image snapshot.',
+        'filter array size': '2x2',
+        'wavelength units': 'Nanometers',
+        'wavelength': wl_flat,
+        'note': 'Raw mosaic. Wavelengths are listed in row-major order (left to right, top to bottom).'
+    }
 
 
 class TisCamera(Camera):
@@ -98,17 +147,27 @@ class TisCamera(Camera):
     def toggle_bit_depth(self) -> None:
         pass
 
+    def _get_frame_view(
+            self,
+            frame: np.ndarray,
+    ) -> np.ndarray:
+        frame_normalized = frame.astype(np.float32) / (2 ** self.bit_depth() - 1)
+        frame_view = np.mean(frame_normalized, axis=-2)
+        return frame_view
+
     def get_frame(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Returns a numpy frame and its view.
         """
         image_buffer = self.sink.snap_single(timeout_ms=self.state.timeout_ms)
-        frame_np = image_buffer.numpy_wrap()
-        frame_normalized = frame_np / (2 ** self.bit_depth() - 1)
-        return frame_normalized, frame_normalized
+        frame = image_buffer.numpy_wrap()
+        frame_view = self._get_frame_view(
+            frame=frame,
+        )
+        return frame, frame_view
 
-    def get_envi_options(self) -> None:
-        pass
+    def get_envi_options(self) -> dict:
+        return get_envi_header(state=self.state)
 
     def set_save_subfolder(self, subfolder: str) -> None:
         self.state.save_subfolder = subfolder
@@ -121,12 +180,13 @@ class TisCamera(Camera):
         return ic4.IC4Exception
 
     def exposure(self) -> int:
-        pass
+        return self.state.current_exposure
 
     def set_exposure(self, exposure: int) -> bool:
-        pass
+        self.state.current_exposure = exposure
+        return True
 
-    def init_exposure(self) -> None:
+    def init_exposure(self, max_exposure: int) -> None:
         pass
 
     def adjust_exposure(self) -> None:
@@ -136,7 +196,7 @@ class TisCamera(Camera):
         pass
 
     def toggle_view(self) -> None:
-        pass
+        self.state.demosaic = not self.state.demosaic
 
 
 def main():
