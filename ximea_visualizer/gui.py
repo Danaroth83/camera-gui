@@ -45,7 +45,7 @@ class VideoPlayer(QWidget):
         self.camera = camera(camera_id=camera_id)
         self.state = GuiState(selected_camera=camera_id, fps=fps)
 
-        self.setWindowTitle("XIMEA video Player")
+        self.setWindowTitle("Camera Video Player")
         self.label = QLabel("Waiting for image...")
         self.play_button = QPushButton("Play")
         self.play_button.clicked.connect(self.toggle_running)
@@ -183,10 +183,23 @@ class VideoPlayer(QWidget):
 
     @staticmethod
     def numpy_to_pixmap(arr: np.ndarray):
-        """Convert a (H, W) float32 NumPy array in [0, 1] to QPixmap"""
-        arr = np.clip(arr * 255.0, 0, 255).astype(np.uint8)
-        h, w = arr.shape
-        qimg = QImage(arr.data, w, h, w, QImage.Format_Grayscale8)
+        if arr.ndim == 2:  # Grayscale
+            qimg = QImage(
+                data=arr.data, 
+                height=arr.shape[1], 
+                width=arr.shape[0], 
+                bytesPerLine=arr.shape[1], 
+                format=QImage.Format_Grayscale8,
+            )
+        elif arr.ndim == 3:  # RGB
+            arr = arr[..., :3]
+            qimg = QImage(
+                data=arr.data, 
+                height=arr.shape[1], 
+                width=arr.shape[0], 
+                bytesPerLine=arr.shape[2] * arr.shape[1], 
+                format=QImage.Format_RGB888,
+            )
         return QPixmap.fromImage(qimg.copy())
 
     def update_frame(self):
