@@ -200,7 +200,7 @@ def camera(camera_id: CameraEnum | str) -> Camera:
         from ximea_visualizer.ximea_interface import XimeaCamera
         return XimeaCamera()
     elif camera_id == CameraEnum.TIS:
-        from ximea_visualizer.ximea_interface import TisCamera
+        from tis_visualizer.tis_interface import TisCamera
         return TisCamera()
     else:
         raise ValueError(f"Camera f{camera_id} not known.")
