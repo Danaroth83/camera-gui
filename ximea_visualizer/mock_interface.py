@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from datetime import datetime
+from enum import Enum
 
 import numpy as np
 from ximea_visualizer.serializer import save_frame, SaveFormatEnum
@@ -9,7 +10,7 @@ from ximea_visualizer.serializer import save_frame, SaveFormatEnum
 class Camera(ABC):
 
     @abstractmethod
-    def open(self, exposure: int) -> None:
+    def open(self) -> None:
         ...
 
     @abstractmethod
@@ -37,7 +38,7 @@ class Camera(ABC):
         ...
 
     @abstractmethod
-    def set_exposure(self, exposure: int) -> None:
+    def set_exposure(self, exposure: int) -> bool:
         ...
 
     @abstractmethod
@@ -66,6 +67,10 @@ class Camera(ABC):
 
     @abstractmethod
     def save_folder(self) -> Path:
+        ...
+
+    @abstractmethod
+    def exception_type(self) -> Exception:
         ...
 
     def save_frame(
@@ -98,7 +103,7 @@ class MockCamera(Camera):
         self._save_folder = data_path
         self._subfolder = None
 
-    def open(self, exposure: int) -> None:
+    def open(self) -> None:
         pass
 
     def close(self) -> None:
@@ -119,8 +124,11 @@ class MockCamera(Camera):
     def exposure(self):
         return self._exposure
 
-    def set_exposure(self, exposure: int) -> None:
+    def set_exposure(self, exposure: int) -> bool:
+        if exposure >= self._exposure_max or exposure <= self._exposure_min:
+            return False
         self._exposure = exposure
+        return True
 
     def init_exposure(self) -> None:
         self._exposure_max = 500_000
@@ -172,3 +180,26 @@ class MockCamera(Camera):
         if self._subfolder is None:
             return self._save_folder
         return self._save_folder / self._subfolder
+    
+    def exception_type(self):
+        return Exception
+
+
+class CameraEnum(str, Enum):
+    MOCK = "mock"
+    XIMEA = "ximea"
+    TIS = "tis"
+
+
+def camera(camera_id: CameraEnum | str) -> Camera:
+    
+    if camera_id == CameraEnum.MOCK:
+        return MockCamera()
+    elif camera_id == CameraEnum.XIMEA:
+        from ximea_visualizer.ximea_interface import XimeaCamera
+        return XimeaCamera()
+    elif camera_id == CameraEnum.TIS:
+        from ximea_visualizer.ximea_interface import TisCamera
+        return TisCamera()
+    else:
+        raise ValueError(f"Camera f{camera_id} not known.")

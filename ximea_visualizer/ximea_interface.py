@@ -12,6 +12,7 @@ XIMEA_MOSAIC_R = 4
 XIMEA_MOSAIC_C = 4
 XIMEA_MIN_EXPOSURE = 7_000
 XIMEA_MAX_EXPOSURE = 499_950
+XIMEA_EXPOSURE_INCREMENT = 10
 XIMEA_DYN_RANGE_10BIT = 1023
 XIMEA_DYN_RANGE_8BIT = 255
 XIMEA_HEIGHT = 2048
@@ -161,13 +162,18 @@ def find_exposure_for_saturation(
 
     converged = False
     saturated = (frame >= state.dynamic_range).sum()
-    mid_exposure = state.current_exposure
     if saturated > max_saturation:
-        state.max_exposure = mid_exposure - 1
+        state.max_exposure = state.current_exposure - 1
     else:
-        state.min_exposure = mid_exposure + 1
+        state.min_exposure = state.current_exposure + 1
     tmp = state.max_exposure - state.min_exposure
-    if abs(saturated - max_saturation) < tol or abs(tmp) < 10:
+    mid_exposure = int((state.max_exposure - state.min_exposure) // 2)
+
+    if (
+        abs(saturated - max_saturation) < tol 
+        or abs(tmp) < 10
+        or abs(state.current_exposure - mid_exposure) <= 2 * XIMEA_EXPOSURE_INCREMENT
+    ):
         converged = True
     return converged
 
@@ -206,9 +212,8 @@ class XimeaCamera(Camera):
         )
         self.state = state
 
-    def open(self, exposure: int = 10_000):
+    def open(self):
         self.cam.open_device()
-        self.set_exposure(exposure)
         self.cam.start_acquisition()
         self.img = xiapi.Image()
         self.state.sync(cam=self.cam)
@@ -238,9 +243,17 @@ class XimeaCamera(Camera):
     def exposure(self) -> int:
         return self.state.current_exposure
 
-    def set_exposure(self, exposure: int) -> None:
-        self.cam.set_exposure(exposure)
+    def set_exposure(self, exposure: int) -> bool:
+        if abs(self.state.current_exposure - exposure) <= XIMEA_EXPOSURE_INCREMENT:
+            return False
+        if exposure <= XIMEA_MIN_EXPOSURE or exposure >= XIMEA_MAX_EXPOSURE:
+            return False
+        try:
+            self.cam.set_exposure(exposure)
+        except xiapi.Xi_error:
+            return False
         self.state.current_exposure = exposure
+        return True
 
     def init_exposure(self) -> None:
         self.state.min_exposure = XIMEA_MIN_EXPOSURE
@@ -266,6 +279,9 @@ class XimeaCamera(Camera):
 
     def toggle_view(self):
         self.state.demosaic = False if self.state.demosaic else True
+
+    def exception_type(self) -> Exception:
+        return xiapi.Xi_error
 
     def get_envi_options(self) -> dict:
         return get_envi_header(state=self.state)

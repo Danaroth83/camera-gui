@@ -36,6 +36,9 @@ def main():
     for i in range(10):
         #get data and pass them from camera to img
         cam.get_image(img)
+        print(f"Min exposure: {cam.get_exposure_minimum()}")
+        print(f"Max exposure: {cam.get_exposure_maximum()}")
+        print(f"Exposure increment: {cam.get_exposure_increment()}")
 
         #get raw data from camera
         #for Python2.x function returns string

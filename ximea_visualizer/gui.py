@@ -17,12 +17,13 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QImage, QPixmap
 
-from ximea_visualizer.mock_interface import Camera, MockCamera
+from ximea_visualizer.mock_interface import Camera, MockCamera, CameraEnum, camera
 from ximea_visualizer.serializer import SaveFormatEnum
 
 
 @dataclass
 class GuiState:
+    selected_camera: CameraEnum = CameraEnum.MOCK
     fps: float = 30
     frame_counter: int = 0
     recording: bool = False
@@ -37,12 +38,12 @@ class GuiState:
 class VideoPlayer(QWidget):
     def __init__(
         self,
-        camera: Camera,
         fps: float,
+        camera_id: CameraEnum | str = CameraEnum.MOCK,
     ):
         super().__init__()
-        self.camera = camera
-        self.state = GuiState(fps=fps)
+        self.camera = camera(camera_id=camera_id)
+        self.state = GuiState(selected_camera=camera_id, fps=fps)
 
         self.setWindowTitle("XIMEA video Player")
         self.label = QLabel("Waiting for image...")
@@ -52,13 +53,14 @@ class VideoPlayer(QWidget):
         self.pause_button.clicked.connect(self.toggle_pausing)
         
         self.view_button = QPushButton("Toggle view")
-        self.view_button.clicked.connect(self.camera.toggle_view)
+        self.view_button.clicked.connect(self.toggle_view)
 
         # FPS and Exposure Inputs
-        self.fps_input = QLineEdit("30")
+        self.fps_input = QLineEdit(f"{self.state.fps}")
         self.exposure_input = QLineEdit(str(self.camera.exposure()))
         self.filename_input = QLineEdit(self.state.filename_stem)
-
+        self.exposure_input.setEnabled(False)
+        
         self.fps_input.editingFinished.connect(self.update_fps)
         self.exposure_input.editingFinished.connect(self.update_exposure)
 
@@ -71,6 +73,12 @@ class VideoPlayer(QWidget):
         self.record_format.addItems([e.value for e in SaveFormatEnum])
         self.record_format.currentIndexChanged.connect(self.set_record_format)
         self.record_format.setCurrentText(self.state.recording_format)
+
+        self.camera_select = QComboBox()
+        self.camera_select.addItems([e.value for e in CameraEnum])
+        self.camera_select.currentIndexChanged.connect(self.choose_camera)
+        self.camera_select.setCurrentText(self.state.selected_camera)
+        self.camera_select.setEnabled(True)
         
         self.exposure_button = QPushButton("Estimate Exposure Time")
         self.exposure_button.clicked.connect(self.toggle_exposure)
@@ -88,6 +96,7 @@ class VideoPlayer(QWidget):
         layout.addWidget(self.label)
         layout.addWidget(self.play_button)
         layout.addWidget(self.pause_button)
+        layout.addWidget(self.camera_select)
         layout.addWidget(self.view_button)
         layout.addWidget(self.bit_depth_button)
         layout.addWidget(self.exposure_button)
@@ -101,24 +110,35 @@ class VideoPlayer(QWidget):
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(int(1000 // self.state.fps))
 
-    def toggle_running(self):
+    def toggle_running(self) -> None:
         if not self.state.running:
+            self.camera_select.setEnabled(False)
+            self.camera = camera(camera_id=self.state.selected_camera)
             self.camera.open()
+            self.exposure_input.setEnabled(True)
+            self.exposure_input.setText(f"{self.camera.exposure()}")
         else:
+            self.camera_select.setEnabled(True)
+            self.exposure_input.setEnabled(False)
             self.camera.close()
         self.state.paused = False
         self.pause_button.setText("Pause")
         self.state.running = not self.state.running
         self.play_button.setText("Stop" if self.state.running else "Play")
         
-    def toggle_pausing(self):
+    def toggle_pausing(self) -> None:
         if not self.state.running:
             return
         self.state.paused = not self.state.paused
         self.pause_button.setText("Pause" if not self.state.paused else "Resume")
+
+    def toggle_view(self) -> None:
+        if (not self.state.running) or self.state.paused:
+            return
+        self.camera.toggle_view()
         
     def toggle_bit_depth(self):
-        if not self.state.running or self.state.paused or self.state.recording:
+        if (not self.state.running) or self.state.paused or self.state.recording:
             return
         self.camera.toggle_bit_depth()
         self.bit_depth_button.setText(f"Toggle bit depth: {self.camera.bit_depth()}")
@@ -150,9 +170,16 @@ class VideoPlayer(QWidget):
         self.exposure_input.setEnabled(False)
         self.camera.init_exposure()
 
-    def set_record_format(self, index):
+    def set_record_format(self):
         selected_value = self.record_format.currentText()
         self.state.recording_format = SaveFormatEnum(selected_value)
+
+    def choose_camera(self):
+        if self.state.running:
+            return
+        selected_value = self.camera_select.currentText()
+        self.state.selected_camera = CameraEnum(selected_value)
+
 
     @staticmethod
     def numpy_to_pixmap(arr: np.ndarray):
@@ -204,10 +231,9 @@ class VideoPlayer(QWidget):
     def update_exposure(self):
         try:
             exposure_val = int(self.exposure_input.text())
-            if exposure_val > 0:
-                self.camera.set_exposure(exposure_val)
-        except ValueError:
-            pass
+            self.camera.set_exposure(exposure_val)
+        except (ValueError, self.camera.exception_type()):
+            self.exposure_input.setText(f"{self.camera.exposure()}")
 
     def update_filename(self):
         try:
@@ -221,12 +247,12 @@ def main():
     app = QApplication(sys.argv)
     try:
         from ximea_visualizer.ximea_interface import XimeaCamera
-        camera = XimeaCamera()
+        camera_id = CameraEnum.XIMEA
     except ImportError:
-        camera = MockCamera()
+        camera_id = CameraEnum.MOCK
     except Exception as e:
         raise e
-    player = VideoPlayer(camera=camera, fps=30)
+    player = VideoPlayer(camera_id=camera_id, fps=30)
     player.resize(640, 480)
     player.show()
     sys.exit(app.exec_())
