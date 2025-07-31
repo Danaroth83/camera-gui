@@ -221,3 +221,8 @@ Daniele Picone
 Univ. Grenoble Alpes, CNRS, Grenoble INP, GIPSA-lab, 38000 Grenoble, France  
 Work mail: [daniele.picone@grenoble-inp.fr](mailto:daniele.picone@grenoble-inp.fr)  
 Personal mail: [danaroth83@gmail.com](mailto:danaroth83@gmail.com)  
+
+Mohamad Jouni  
+Florais - Filiale UGA, CNRS, Grenoble INP, GIPSA-lab, 38000 Grenoble, France  
+Work mail: [mohamad.jouni@grenoble-inp.fr](mailto:mohamad.jouni@grenoble-inp.fr)  
+Personal mail: [mhmd.jouni@outlook.fr](mailto:mhmd.jouni@outlook.fr)  
