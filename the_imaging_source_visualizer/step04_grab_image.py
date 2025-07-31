@@ -14,8 +14,8 @@ def main():
     # grabber.device_property_map.set_value(ic4.PropId.PIXEL_FORMAT, ic4.PixelFormat.BGR8)
     #
     # # Set the resolution to 640x480
-    # grabber.device_property_map.set_value(ic4.PropId.WIDTH, 640)
-    # grabber.device_property_map.set_value(ic4.PropId.HEIGHT, 480)
+    grabber.device_property_map.set_value(ic4.PropId.WIDTH, 640)
+    grabber.device_property_map.set_value(ic4.PropId.HEIGHT, 480)
 
     # Create a SnapSink. A SnapSink allows grabbing single images (or image sequences) out of a data stream.
     sink = ic4.SnapSink()
