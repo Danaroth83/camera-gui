@@ -106,7 +106,7 @@ class TisCamera(Camera):
     sink: ic4.SnapSink | None
     state: TisCameraState
 
-    def __init__(self, pixel_format: ic4.PixelFormat):
+    def __init__(self, pixel_format: ic4.PixelFormat = TIS_DEFAULT_PIXEL_FORMAT):
         self.grabber = ic4.Grabber(dev=None)
         self.sink = None
         data_path = load_project_dir() / "data"
