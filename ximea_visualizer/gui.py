@@ -75,7 +75,7 @@ class VideoPlayer(QWidget):
         self.exposure_button = QPushButton("Estimate Exposure Time")
         self.exposure_button.clicked.connect(self.toggle_exposure)
         
-        self.bit_depth_button = QPushButton(f"Toggle bit depth: {camera.bit_depth()}")
+        self.bit_depth_button = QPushButton(f"Toggle bit depth: {self.camera.bit_depth()}")
         self.bit_depth_button.clicked.connect(self.toggle_bit_depth)
 
         # Layouts
@@ -99,7 +99,7 @@ class VideoPlayer(QWidget):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
-        self.timer.start(1000 // self.state.fps)
+        self.timer.start(int(1000 // self.state.fps))
 
     def toggle_running(self):
         if not self.state.running:
@@ -109,7 +109,7 @@ class VideoPlayer(QWidget):
         self.state.paused = False
         self.pause_button.setText("Pause")
         self.state.running = not self.state.running
-        self.play_button.setText("Stop" if not self.state.running else "Play")
+        self.play_button.setText("Stop" if self.state.running else "Play")
         
     def toggle_pausing(self):
         if not self.state.running:
@@ -121,7 +121,7 @@ class VideoPlayer(QWidget):
         if not self.state.running or self.state.paused or self.state.recording:
             return
         self.camera.toggle_bit_depth()
-        self.bit_depth_button.SetText(f"Toggle bit depth: {camera.bit_depth()}")
+        self.bit_depth_button.setText(f"Toggle bit depth: {self.camera.bit_depth()}")
 
     def toggle_recording(self):
         if (not self.state.running) or self.state.paused:
@@ -146,7 +146,7 @@ class VideoPlayer(QWidget):
             return
         self.state.estimating_exposure = True
         self.state.exposure_tries = 0
-        self.exposure_estimation.setText("Estimating exposure time...")
+        self.exposure_button.setText("Estimating exposure time...")
         self.exposure_input.setEnabled(False)
         self.camera.init_exposure()
 
@@ -167,6 +167,7 @@ class VideoPlayer(QWidget):
             return
         if self.state.estimating_exposure:
             self.camera.adjust_exposure()
+            self.exposure_input.setText(f"{self.camera.exposure()}")
         frame_save, frame_view = self.camera.get_frame()
         if frame_view is not None:
             pixmap = self.numpy_to_pixmap(arr=frame_view)
@@ -188,7 +189,7 @@ class VideoPlayer(QWidget):
             if not self.state.estimating_exposure:
                 self.state.exposure_tries = 0
                 self.exposure_input.setEnabled(True)
-                self.exposure_esimation.SetText("Estimate Exposure Time")
+                self.exposure_button.SetText("Estimate Exposure Time")
 
     def update_fps(self):
         try:
@@ -196,7 +197,7 @@ class VideoPlayer(QWidget):
             if fps_val <= 0:
                 return
             self.state.fps = fps_val
-            self.timer.setInterval(1000 // self.state.fps)
+            self.timer.setInterval(int(1000 // self.state.fps))
         except ValueError:
             pass  # Ignore invalid input
 

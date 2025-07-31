@@ -10,7 +10,7 @@ from ximea_visualizer.mock_interface import Camera
 
 XIMEA_MOSAIC_R = 4
 XIMEA_MOSAIC_C = 4
-XIMEA_MIN_EXPOSURE = 100
+XIMEA_MIN_EXPOSURE = 7_000
 XIMEA_MAX_EXPOSURE = 499_950
 XIMEA_DYN_RANGE_10BIT = 1023
 XIMEA_DYN_RANGE_8BIT = 255
@@ -22,12 +22,8 @@ XIMEA_WIDTH = 1088
 class CameraState:
     save_folder: Path
     current_exposure: int
-    paused: bool = False
     demosaic: bool = False
-    record: bool = False
-    bit_depth_selector: bool = False
     bit_depth_10bits: bool = False
-    estimating_exposure: bool = False
     min_exposure: int = XIMEA_MIN_EXPOSURE
     max_exposure: int = XIMEA_MAX_EXPOSURE
     filename_stem: str = "frame"
@@ -165,13 +161,12 @@ def find_exposure_for_saturation(
 
     converged = False
     saturated = (frame >= state.dynamic_range).sum()
-    mid_exposure = (state.max_exposure + state.min_exposure) // 2
+    mid_exposure = state.current_exposure
     if saturated > max_saturation:
         state.max_exposure = mid_exposure - 1
     else:
         state.min_exposure = mid_exposure + 1
     tmp = state.max_exposure - state.min_exposure
-    state.current_exposure = (state.max_exposure + state.min_exposure) // 2
     if abs(saturated - max_saturation) < tol or abs(tmp) < 10:
         converged = True
     return converged
@@ -181,7 +176,7 @@ def switch_bit_depth(
     cam: xiapi.Camera,
     state: CameraState,
 ) -> None:
-    if state.bit_depth_max:
+    if state.bit_depth_10bits:
         cam.set_imgdataformat("XI_MONO8")
         cam.set_image_data_bit_depth("XI_BPP_8")
         state.bit_depth_10bits = False
@@ -253,7 +248,7 @@ class XimeaCamera(Camera):
 
     def adjust_exposure(self) -> None:
         self.set_exposure(
-            exposure=(self.state.max_exposure - self.state.min_exposure) // 2,
+            exposure=int((self.state.max_exposure - self.state.min_exposure) // 2),
         )
 
     def check_exposure(self, frame: np.ndarray) -> bool:
