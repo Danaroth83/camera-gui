@@ -17,7 +17,7 @@ class TisCameraState:
     # save_subfolder: str | None = None
 
     def sync(self, cam: ic4.Grabber):
-        cam.device_property_map.set_value
+
 
 
         self.current_exposure = cam.get_exposure()
