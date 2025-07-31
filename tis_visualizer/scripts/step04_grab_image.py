@@ -8,10 +8,12 @@ def main():
 
     # Open the first available video capture device
     first_device_info = ic4.DeviceEnum.devices()[0]
+    print(first_device_info)
+
     grabber.device_open(first_device_info)
 
     # # Configure the device to output images in the Mono8 pixel format
-    # grabber.device_property_map.set_value(ic4.PropId.PIXEL_FORMAT, ic4.PixelFormat.BGR8)
+    # grabber.device_property_map.set_value(ic4.PropId.PIXEL_FORMAT, ic4.PixelFormat.Mono8)
     #
     # # Set the resolution to 640x480
     # grabber.device_property_map.set_value(ic4.PropId.WIDTH, 640)

@@ -10,7 +10,7 @@ def main():
 
     Gst.init(sys.argv)  # init gstreamer
 
-    serial = None
+    serial = 39610581
 
     pipeline = Gst.parse_launch("tcambin name=bin "
                                 " ! videoconvert"

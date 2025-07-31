@@ -70,8 +70,8 @@ def example_device_list_changed():
 def main():
     ic4.Library.init()
 
-    # print_device_list()
-    # print_interface_device_tree()
+    print_device_list()
+    print_interface_device_tree()
     example_device_list_changed()
 
 
