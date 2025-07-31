@@ -3,7 +3,6 @@ from datetime import datetime
 from pathlib import Path
 
 import imagingcontrol4 as ic4
-from PyQt6.QtCore.QProcess import state
 
 from ximea_visualizer.paths import load_project_dir
 
@@ -151,14 +150,14 @@ class TisCamera(Camera):
             frame: np.ndarray,
     ) -> np.ndarray:
         frame_normalized = frame.astype(np.float32) / (2 ** self.bit_depth() - 1)
-        frame_view = np.mean(frame_normalized, axis=-2)
+        frame_view = np.mean(frame_normalized, axis=-1)
         return frame_view
 
     def get_frame(self, timeout_ms: int) -> tuple[np.ndarray, np.ndarray]:
         """
         Returns a numpy frame and its view.
         """
-        image_buffer = self.sink.snap_single(timeout_ms=timeout_ms)
+        image_buffer = self.sink.snap_single(timeout_ms=10000)
         frame = image_buffer.numpy_wrap()
         frame_view = self._get_frame_view(
             frame=frame,
