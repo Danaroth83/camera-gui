@@ -1,17 +1,23 @@
 import imagingcontrol4 as ic4
+
 ic4.Library.init()
 
 
-def main():
+def main_procedural():
     # Create a Grabber object
     grabber = ic4.Grabber()
 
     # Open the first available video capture device
     first_device_info = ic4.DeviceEnum.devices()[0]
+    print(first_device_info)
+
     grabber.device_open(first_device_info)
 
+    a = grabber.device_property_map
+    print(a)
+
     # # Configure the device to output images in the Mono8 pixel format
-    # grabber.device_property_map.set_value(ic4.PropId.PIXEL_FORMAT, ic4.PixelFormat.BGR8)
+    # grabber.device_property_map.set_value(ic4.PropId.PIXEL_FORMAT, ic4.PixelFormat.Mono8)
     #
     # # Set the resolution to 640x480
     grabber.device_property_map.set_value(ic4.PropId.WIDTH, 640)
@@ -37,6 +43,10 @@ def main():
 
     # Stop the data stream.
     grabber.stream_stop()
+
+
+def main():
+    pass
 
 
 if __name__ == "__main__":

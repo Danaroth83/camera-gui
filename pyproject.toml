@@ -9,7 +9,10 @@ dependencies = [
     "imagingcontrol4>=1.3.0.3125",
     "matplotlib>=3.10.3",
     "numpy>=2.3.2",
-    "pyqt5>=5.15.11; sys_platform=='linux'",
+    "opencv-python>=4.11.0.86",
+    "pygobject>=3.52.3",
+    "pyqt5>=5.15.11",
+    "pyqt6>=6.9.1",
     "spectral>=0.24",
 ]
 
