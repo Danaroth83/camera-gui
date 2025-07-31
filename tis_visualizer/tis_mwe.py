@@ -3,7 +3,7 @@ import imagingcontrol4 as ic4
 ic4.Library.init()
 
 
-def main():
+def main_procedural():
     # Create a Grabber object
     grabber = ic4.Grabber()
 
@@ -43,6 +43,10 @@ def main():
 
     # Stop the data stream.
     grabber.stream_stop()
+
+
+def main():
+    pass
 
 
 if __name__ == "__main__":
