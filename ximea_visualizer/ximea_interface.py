@@ -97,11 +97,11 @@ def get_envi_header(state: CameraState) -> dict:
         'interleave': 'bsq',
         'byte order': 0,  # little endian (0)
         'data type': data_type,  # 1 = uint8, 12 = uint16
-        'sensor type': 'XIMEA MQ02HG-IM-SM4x4',
+        'sensor type': 'XIMEA MQ02HG-IM-SM4x4-REDNIR',
 
-        'spatial resolution': '512 x 272 (per band, SNm4x4 VIS version)',
+        'spatial resolution': '512 x 272 (per band, SNm4x4 REDNIR version)',
         'spectral resolution': '~10-15 nm (collimated)',
-        'spectral range': '460-620 nm (SNm4x4 VIS version), 595-860 nm (SNm4x4 RedNIR version)',
+        'spectral range': '595-860 nm (SNm4x4 RedNIR version)',
         'bands count': '16 bands',
         'bit depth': bit_depth,
         'pixel pitch': '5.5 μm',
@@ -230,7 +230,7 @@ class XimeaCamera(Camera):
     def bit_depth(self) -> int:
         return self.state.bit_depth
 
-    def get_frame(self) -> tuple[np.ndarray, np.ndarray]:
+    def get_frame(self, timeout_ms: int) -> tuple[np.ndarray, np.ndarray]:
         if self.img is None:
             raise ValueError("Camera was not opened. Run self.open() before this operation.")
         return get_frame(

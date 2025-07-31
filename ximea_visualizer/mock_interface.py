@@ -26,7 +26,7 @@ class Camera(ABC):
         ...
 
     @abstractmethod
-    def get_frame(self) -> tuple[np.ndarray, np.ndarray]:
+    def get_frame(self, timeout_ms: int) -> tuple[np.ndarray, np.ndarray]:
         ...
 
     @abstractmethod
@@ -150,7 +150,7 @@ class MockCamera(Camera):
         else:
             return False
 
-    def get_frame(self) -> tuple[np.ndarray, np.ndarray]:
+    def get_frame(self, timeout_ms: int) -> tuple[np.ndarray, np.ndarray]:
         """Returns a (H, W) grayscale float32 NumPy array in [0, 1]"""
         img = np.zeros(self.shape(), dtype=np.float32)
         if self._toggle_view == 0:

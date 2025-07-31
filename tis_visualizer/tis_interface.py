@@ -49,7 +49,6 @@ class TisCameraState:
     pixel_format: ic4.PixelFormat = ic4.PixelFormat.BayerGB16
     demosaic: bool = False
     save_subfolder: str | None = None
-    timeout_ms: int = 1000
 
     @property
     def save_path(self) -> Path | None:
@@ -155,11 +154,11 @@ class TisCamera(Camera):
         frame_view = np.mean(frame_normalized, axis=-2)
         return frame_view
 
-    def get_frame(self) -> tuple[np.ndarray, np.ndarray]:
+    def get_frame(self, timeout_ms: int) -> tuple[np.ndarray, np.ndarray]:
         """
         Returns a numpy frame and its view.
         """
-        image_buffer = self.sink.snap_single(timeout_ms=self.state.timeout_ms)
+        image_buffer = self.sink.snap_single(timeout_ms=timeout_ms)
         frame = image_buffer.numpy_wrap()
         frame_view = self._get_frame_view(
             frame=frame,

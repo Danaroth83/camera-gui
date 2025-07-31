@@ -218,7 +218,7 @@ class VideoPlayer(QWidget):
         if self.state.estimating_exposure:
             self.camera.adjust_exposure()
             self.exposure_input.setText(f"{self.camera.exposure()}")
-        frame_save, frame_view = self.camera.get_frame()
+        frame_save, frame_view = self.camera.get_frame(timeout_ms=int(1000 // self.state.fps))
         if frame_view is not None:
             pixmap = self.numpy_to_pixmap(arr=frame_view)
             self.label.setPixmap(pixmap)
