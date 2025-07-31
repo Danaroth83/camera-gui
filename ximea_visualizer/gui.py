@@ -36,6 +36,9 @@ class GuiState:
 
 
 class VideoPlayer(QWidget):
+    camera: Camera
+
+
     def __init__(
         self,
         fps: float,
@@ -57,7 +60,7 @@ class VideoPlayer(QWidget):
 
         # FPS and Exposure Inputs
         self.fps_input = QLineEdit(f"{self.state.fps}")
-        self.exposure_input = QLineEdit(str(self.camera.exposure()))
+        self.exposure_input = QLineEdit(f"{self.camera.exposure():d}")
         self.filename_input = QLineEdit(self.state.filename_stem)
         self.exposure_input.setEnabled(False)
         
@@ -112,9 +115,13 @@ class VideoPlayer(QWidget):
 
     def toggle_running(self) -> None:
         if not self.state.running:
+            try:
+                self.camera = camera(camera_id=self.state.selected_camera)
+                self.camera.open()
+            except self.camera.exception_type() as e:
+                print(e)
+                return
             self.camera_select.setEnabled(False)
-            self.camera = camera(camera_id=self.state.selected_camera)
-            self.camera.open()
             self.exposure_input.setEnabled(True)
             self.exposure_input.setText(f"{self.camera.exposure()}")
         else:
@@ -168,7 +175,7 @@ class VideoPlayer(QWidget):
         self.state.exposure_tries = 0
         self.exposure_button.setText("Estimating exposure time...")
         self.exposure_input.setEnabled(False)
-        self.camera.init_exposure()
+        self.camera.init_exposure(max_exposure=int(1_000_000 // self.state.fps))
 
     def set_record_format(self):
         selected_value = self.record_format.currentText()
@@ -183,23 +190,26 @@ class VideoPlayer(QWidget):
 
     @staticmethod
     def numpy_to_pixmap(arr: np.ndarray):
-        if arr.ndim == 2:  # Grayscale
+        arr = np.clip(arr * 255.0, 0, 255).astype(np.uint8)
+        if arr.ndim == 2 or (arr.ndim == 3 and arr.shape[2] == 1):  # Grayscale
             qimg = QImage(
-                data=arr.data, 
-                height=arr.shape[1], 
-                width=arr.shape[0], 
-                bytesPerLine=arr.shape[1], 
-                format=QImage.Format_Grayscale8,
+                arr.data, 
+                arr.shape[1], 
+                arr.shape[0], 
+                arr.shape[1], 
+                QImage.Format_Grayscale8,
             )
         elif arr.ndim == 3:  # RGB
             arr = arr[..., :3]
             qimg = QImage(
-                data=arr.data, 
-                height=arr.shape[1], 
-                width=arr.shape[0], 
-                bytesPerLine=arr.shape[2] * arr.shape[1], 
-                format=QImage.Format_RGB888,
+                arr.data, 
+                arr.shape[1], 
+                arr.shape[0], 
+                arr.shape[2] * arr.shape[1], 
+                QImage.Format_RGB888,
             )
+        else:
+            ValueError("Image not displayable")
         return QPixmap.fromImage(qimg.copy())
 
     def update_frame(self):
@@ -242,6 +252,8 @@ class VideoPlayer(QWidget):
             pass  # Ignore invalid input
 
     def update_exposure(self):
+        if (not self.state.running) or self.state.paused:
+            return
         try:
             exposure_val = int(self.exposure_input.text())
             self.camera.set_exposure(exposure_val)

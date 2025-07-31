@@ -153,12 +153,14 @@ def get_frame(
 def find_exposure_for_saturation(
     state: CameraState,
     frame: np.ndarray,
-    max_saturation: int = 8000,
-    tol: int = 1000,  # tolerated difference in number of saturated pixels
 ) -> bool:
     """
     Binary search for exposure time to keep saturated pixels under max_saturation.
     """
+    # Amount of allowed saturated pixels
+    max_saturation = 1000 if state.bit_depth_10bits else 8000
+    # Tolerated difference in number of saturated pixels
+    tol = 125 if state.bit_depth_10bits else 1000
 
     converged = False
     saturated = (frame >= state.dynamic_range).sum()
@@ -167,7 +169,7 @@ def find_exposure_for_saturation(
     else:
         state.min_exposure = state.current_exposure + 1
     tmp = state.max_exposure - state.min_exposure
-    mid_exposure = int((state.max_exposure - state.min_exposure) // 2)
+    mid_exposure = int((state.max_exposure + state.min_exposure) // 2)
 
     if (
         abs(saturated - max_saturation) < tol 
@@ -241,7 +243,7 @@ class XimeaCamera(Camera):
         return XIMEA_HEIGHT, XIMEA_WIDTH
 
     def exposure(self) -> int:
-        return self.state.current_exposure
+        return int(self.state.current_exposure)
 
     def set_exposure(self, exposure: int) -> bool:
         if abs(self.state.current_exposure - exposure) <= XIMEA_EXPOSURE_INCREMENT:
@@ -255,13 +257,13 @@ class XimeaCamera(Camera):
         self.state.current_exposure = exposure
         return True
 
-    def init_exposure(self) -> None:
+    def init_exposure(self, max_exposure: int) -> None:
+        self.state.max_exposure = min(XIMEA_MAX_EXPOSURE, max_exposure)
         self.state.min_exposure = XIMEA_MIN_EXPOSURE
-        self.state.max_exposure = XIMEA_MAX_EXPOSURE
 
     def adjust_exposure(self) -> None:
         self.set_exposure(
-            exposure=int((self.state.max_exposure - self.state.min_exposure) // 2),
+            exposure=int((self.state.max_exposure + self.state.min_exposure) // 2),
         )
 
     def check_exposure(self, frame: np.ndarray) -> bool:
@@ -285,3 +287,4 @@ class XimeaCamera(Camera):
 
     def get_envi_options(self) -> dict:
         return get_envi_header(state=self.state)
+ 

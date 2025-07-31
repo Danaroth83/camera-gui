@@ -42,7 +42,7 @@ class Camera(ABC):
         ...
 
     @abstractmethod
-    def init_exposure(self) -> None:
+    def init_exposure(self, max_exposure: int) -> None:
         ...
 
     @abstractmethod
@@ -134,7 +134,8 @@ class MockCamera(Camera):
         self._exposure_max = 500_000
         self._exposure_min = 100
 
-    def adjust_exposure(self) -> None:
+    def adjust_exposure(self, max_exposure: int) -> None:
+        exposure_max = min(self._max_exposure, max_exposure)
         self._exposure = (self._exposure_min + self._exposure_max) // 2
 
     def check_exposure(self, frame: np.ndarray) -> bool:
