@@ -11,18 +11,33 @@ import numpy as np
 
 from ximea_visualizer.mock_interface import Camera
 
-TIS_HEIGHT = 1920
-TIS_WIDTH = 1200
-TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.Mono8
+TIS_HEIGHT = 1200
+TIS_WIDTH = 1920
+TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.BayerGB16
 
-# bit_depth_map = {
-#     ic4.PixelFormat.Mono8: 8,
-# }
+TIS_ACCEPTED_PIXEL_FORMATS = [
+    ic4.PixelFormat.Mono8,
+    ic4.PixelFormat.BayerGB8,
+    ic4.PixelFormat.BayerGB16,
+]
+
+PIXEL_FORMAT_TO_BIT_DEPTH_MAP = {
+    ic4.PixelFormat.Mono8: 8,
+    ic4.PixelFormat.BayerGB8: 8,
+    ic4.PixelFormat.BayerGB16: 16,
+}
+
+PIXEL_FORMAT_TO_SHAPE = {
+    ic4.PixelFormat.Mono8: (TIS_HEIGHT, TIS_WIDTH, 1),
+    ic4.PixelFormat.BayerGB8: (TIS_HEIGHT, TIS_WIDTH, 1),
+    ic4.PixelFormat.BayerGB16: (TIS_HEIGHT, TIS_WIDTH, 1),
+}
 
 @dataclass
 class TisCameraState:
     save_folder: Path
     current_exposure: int
+    pixel_format: ic4.PixelFormat = ic4.PixelFormat.BayerGB16
     save_subfolder: str | None = None
     timeout_ms: int = 1000
 
@@ -33,13 +48,17 @@ class TisCameraState:
         else:
             return self.save_folder / self.save_subfolder
 
+    def bit_depth(self) -> int:
+        bit_depth = PIXEL_FORMAT_TO_BIT_DEPTH_MAP[self.pixel_format]
+        return bit_depth
+
 
 class TisCamera(Camera):
     grabber: ic4.Grabber
     sink: ic4.SnapSink | None
     state: TisCameraState
 
-    def __init__(self):
+    def __init__(self, pixel_format: ic4.PixelFormat):
         self.grabber = ic4.Grabber(dev=None)
         self.sink = None
         data_path = load_project_dir() / "data"
@@ -49,13 +68,18 @@ class TisCamera(Camera):
         state = TisCameraState(
             save_folder=data_path,
             current_exposure=10_000,
+            pixel_format=pixel_format,
         )
         self.state = state
 
     def open(self):
         first_device_info = ic4.DeviceEnum.devices()[0]
         self.grabber.device_open(dev=first_device_info)
-        self.sink = ic4.SnapSink()
+        self.sink = ic4.SnapSink(
+            accepted_pixel_formats=[
+                self.state.pixel_format,
+            ]
+        )
         self.grabber.stream_setup(
             sink=self.sink,
             setup_option=ic4.StreamSetupOption.ACQUISITION_START,
@@ -63,12 +87,13 @@ class TisCamera(Camera):
 
     def close(self):
         self.grabber.stream_stop()
+        self.grabber.device_close()
 
     def shape(self) -> tuple[int, int]:
-        pass
+        return TIS_HEIGHT, TIS_WIDTH
 
     def bit_depth(self) -> int:
-        pass
+        return self.state.bit_depth()
 
     def toggle_bit_depth(self) -> None:
         pass
@@ -77,23 +102,10 @@ class TisCamera(Camera):
         """
         Returns a numpy frame and its view.
         """
-        print(
-            f"Sink: {self.sink}\n"
-            f"\tType: {self.sink.type}\n"
-            f"\tOutput image type: {self.sink.output_image_type}"
-        )
-
         image_buffer = self.sink.snap_single(timeout_ms=self.state.timeout_ms)
-        print(f"Received an image. ImageType: {image_buffer.image_type}")
-
         frame_np = image_buffer.numpy_wrap()
-        print(
-            f"Frame NumPy: {frame_np.shape}\n"
-            f"\tType: {type(frame_np)}\n"
-            f"\tData Type: {frame_np.dtype}"
-        )
-
-        return frame_np, frame_np
+        frame_normalized = frame_np / (2 ** self.bit_depth() - 1)
+        return frame_normalized, frame_normalized
 
     def get_envi_options(self) -> None:
         pass
@@ -128,11 +140,13 @@ class TisCamera(Camera):
 
 
 def main():
-    cam = TisCamera()
+    cam = TisCamera(pixel_format=ic4.PixelFormat.BayerGB16)
 
     cam.open()
 
     frame, frame_view = cam.get_frame()
+    print(f"frame type: {frame.dtype}, max: {frame.max()}")
+    print(f"frame_view type: {frame_view.dtype}, max: {frame_view.max()}")
 
     cam.close()
 
