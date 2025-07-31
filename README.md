@@ -39,11 +39,11 @@ and select `Linux x86 Software Package Beta`.
 
 Unzip it and then browse to the `package` subfolder, and then run
 ```bash
-sudo .\install -cam_usb30
+sudo ./install -cam_usb30
 ```
 if your camera is USB 3.0 based (this is the case for our camera), or
 ```bash
-sudo .\install -pcie
+sudo ./install -pcie
 ```
 if it is based on the PCIE protocol.
 
@@ -74,12 +74,12 @@ python -c "import ximea; print(ximea.__version__)"
 If this has not worked, please try:
 - Uninstalling your XIMEA software package
   ```bash
-  sudo \opt\XIMEA\uninstall
+  sudo /opt/XIMEA/uninstall
   ```
 - Try installing the software package again through a root account
   ```bash
   su -i
-  sudo .\install
+  sudo ./install
   ```
 
 ### Testing the camera API

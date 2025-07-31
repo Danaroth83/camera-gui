@@ -173,7 +173,7 @@ class VideoPlayer(QWidget):
             pixmap = self.numpy_to_pixmap(arr=frame_view)
             self.label.setPixmap(pixmap)
         if self.state.recording:
-            filename = f"frame_{self.state.frame_counter:04d}.png"
+            filename = f"frame_{self.state.frame_counter:04d}"
             self.camera.save_frame(
                 filename_stem=filename,
                 frame=frame_save,
@@ -189,7 +189,7 @@ class VideoPlayer(QWidget):
             if not self.state.estimating_exposure:
                 self.state.exposure_tries = 0
                 self.exposure_input.setEnabled(True)
-                self.exposure_button.SetText("Estimate Exposure Time")
+                self.exposure_button.setText("Estimate Exposure Time")
 
     def update_fps(self):
         try:
