@@ -35,7 +35,13 @@ def main():
         camera_a = CameraEnum.MOCK
     except Exception as e:
         raise e
-    camera_b = CameraEnum.MOCK
+    try:
+        from tis_visualizer.tis_interface import TisCamera
+        camera_b = CameraEnum.TIS
+    except ImportError:
+        camera_b = CameraEnum.MOCK
+    except Exception as e:
+        raise e
     player = DoubleVideoPlayer(camera_a=camera_a, camera_b=camera_b)
     player.resize(640, 480)
     player.show()
