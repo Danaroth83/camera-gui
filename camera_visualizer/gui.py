@@ -284,8 +284,8 @@ class VideoPlayer(QWidget):
 
 def main():
     parser = argparse.ArgumentParser(description="Camera visualizer with optional window resize.")
-    parser.add_argument('--Width', '-W', type=int, default=640, help='Window width')
-    parser.add_argument('--Height', '-H', type=int, default=480, help='Window height')
+    parser.add_argument('--width', '-w', type=int, default=640, help='Window width')
+    parser.add_argument('--height', '-h', type=int, default=480, help='Window height')
     args = parser.parse_args()
 
     app = QApplication(sys.argv)
