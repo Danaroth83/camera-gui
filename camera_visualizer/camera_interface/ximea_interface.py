@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Type
 
 import numpy as np
 from pathlib import Path
@@ -282,7 +283,7 @@ class XimeaCamera(Camera):
     def toggle_view(self):
         self.state.demosaic = not self.state.demosaic
 
-    def exception_type(self) -> Exception:
+    def exception_type(self) -> Type[Exception]:
         return xiapi.Xi_error
 
     def get_envi_options(self) -> dict:

@@ -43,6 +43,7 @@ PIXEL_FORMAT_TO_ENVI_FORMAT = {
 class TisCameraState:
     save_folder: Path
     current_exposure: int
+    timeout_ms: int = 10_000
     pixel_format: ic4.PixelFormat = ic4.PixelFormat.BayerGB16
     demosaic: bool = False
     save_subfolder: str | None = None
@@ -53,6 +54,9 @@ class TisCameraState:
             return None
         else:
             return self.save_folder / self.save_subfolder
+
+    def shape(self) -> tuple[int, ...]:
+        return PIXEL_FORMAT_TO_SHAPE[self.pixel_format]
 
     def bit_depth(self) -> int:
         bit_depth = PIXEL_FORMAT_TO_BIT_DEPTH_MAP[self.pixel_format]
@@ -134,8 +138,8 @@ class TisCamera(Camera):
         self.grabber.stream_stop()
         self.grabber.device_close()
 
-    def shape(self) -> tuple[int, int]:
-        return TIS_HEIGHT, TIS_WIDTH
+    def shape(self) -> tuple[int, ...]:
+        return self.state.shape()
 
     def bit_depth(self) -> int:
         return self.state.bit_depth()
@@ -151,11 +155,11 @@ class TisCamera(Camera):
         frame_view = np.mean(frame_normalized, axis=-1)
         return frame_view
 
-    def get_frame(self, timeout_ms: int) -> tuple[np.ndarray, np.ndarray]:
+    def get_frame(self, fps: float) -> tuple[np.ndarray, np.ndarray]:
         """
         Returns a numpy frame and its view.
         """
-        image_buffer = self.sink.snap_single(timeout_ms=10000)
+        image_buffer = self.sink.snap_single(timeout_ms=self.state.timeout_ms)
         frame = image_buffer.numpy_wrap()
         frame_view = self._get_frame_view(
             frame=frame,
@@ -172,7 +176,7 @@ class TisCamera(Camera):
     def save_folder(self) -> Path:
         return self.state.save_path
 
-    def exception_type(self) -> Exception:
+    def exception_type(self) -> Type[Exception]:
         return ic4.IC4Exception
 
     def exposure(self) -> int:
