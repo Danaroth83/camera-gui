@@ -68,7 +68,7 @@ A GUI will allow to select the camera model:
 - `tis` is the Imaging Source camera model DFK 23UX236.
 and press the `Start` button.
 
-Even 
+Even if no camera API is installed, the `mock` camera should showcare
 
 
 You can also run two camera feeds at the same time by running:
