@@ -2,8 +2,8 @@ import sys
 
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QApplication
 
-from ximea_visualizer.gui import VideoPlayer
-from ximea_visualizer.mock_interface import CameraEnum
+from camera_visualizer.gui import VideoPlayer
+from camera_visualizer.camera_interface.mock_interface import CameraEnum
 
 
 class DoubleVideoPlayer(QWidget):

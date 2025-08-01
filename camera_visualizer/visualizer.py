@@ -6,8 +6,8 @@ import argparse
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-from ximea_visualizer.mock_interface import MockCamera, Camera
-from ximea_visualizer.serializer import SaveFormatEnum
+from camera_visualizer.camera_interface.mock_interface import MockCamera, Camera
+from camera_visualizer.serializer import SaveFormatEnum
 
 
 class VisualizerState:

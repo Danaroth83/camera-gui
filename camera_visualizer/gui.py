@@ -17,8 +17,9 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QImage, QPixmap
 
-from ximea_visualizer.mock_interface import Camera, MockCamera, CameraEnum, camera
-from ximea_visualizer.serializer import SaveFormatEnum
+from camera_visualizer.camera_interface.mock_interface import Camera, \
+    CameraEnum, camera
+from camera_visualizer.serializer import SaveFormatEnum
 
 
 @dataclass

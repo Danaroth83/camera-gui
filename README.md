@@ -1,20 +1,30 @@
 # Introduction
 
-This code was originally produced for a user-friendly Python interface with the 
-XIMEA camera model MQ02HG-IM-SM4x4.
+This code was originally produced for a user-friendly Python interface
+for the visualization of cameras through a device independent API.
 
-The camera is a mosaic based camera with a 4x4 color filter array pattern operating in the RED/NIR wavelength range.
-
-The provided code allows to:
-- Visualize the acquisition;
-- Pause the acquisition;
-- Switch between a mosaiced and demosaiced visualization;
-- Record a sequence of frames.
+This code was originally developed for interfacing with:
+- the XIMEA camera model MQ02HG-IM-SM4x4-RedNir.
+  - A hyperspectral mosaic based camera with a 4x4 color filter array pattern
+    operating in the RED/NIR range
+- the Imaging Source camera model DFK 23UX236 
+  - A compact RGB camera with a Bayer patterned color filter array.
+  - 
+The code provides a graphical interface in PyQt5 which allows to:
+- visualize the data stream;
+- pause resume the acquisition;
+- switch between different image views (e.g. mosaiced/demosaiced)
+- change the bit depth;
+- record a sequence of frames;
+- change the FPS;
+- set and dynamically assess the exposure time.
 
 # Installation instruction
 
 
-## Prerequisites
+## XIMEA API installation
+
+### Prerequisites
 
 For this tutorial, you require a Linux machine running on x86 with `root`
 privileges.
@@ -22,8 +32,6 @@ privileges.
 Before installing, you may need to change the security level of your UEFI/BIOS.
 Restart your PC and go to the `UEFI/BIOS firmware` installation (typically by pressing Esc, F2, or Del at restart).
 In the `UEFI` menu, choose `Secure Boot` and select `Disabled`.
-
-## XIMEA API installation
 
 ### Introduction
 
@@ -170,8 +178,12 @@ sudo apt install libxcb-xinerama0
 From this moment on you should be able to connect the camera through USB to
 your machine and type:
 ```bash
-python ximea_visualizer/visualization.py
+python ximea_visualizer/gui.py
 ```
+A GUI will allow to select the camera model:
+- `mock` is a fake camera just to test the graphic interface
+- `ximea`: is 
+
 
 where 10000 is the requested exposure time (10 seconds in this case).
 From the visualization applet, you can (while within the scope of the figure):

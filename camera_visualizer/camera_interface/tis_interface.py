@@ -3,14 +3,12 @@ from datetime import datetime
 from pathlib import Path
 
 import imagingcontrol4 as ic4
-
-from ximea_visualizer.paths import load_project_dir
-
-ic4.Library.init()
-
 import numpy as np
 
-from ximea_visualizer.mock_interface import Camera
+from camera_visualizer.camera_interface.mock_interface import Camera
+from camera_visualizer.paths import load_project_dir
+
+ic4.Library.init()
 
 TIS_HEIGHT = 1200
 TIS_WIDTH = 1920

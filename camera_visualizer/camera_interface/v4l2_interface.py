@@ -1,11 +1,12 @@
 # v4l2_camera.py (updated)
 
-import numpy as np
 from pathlib import Path
-from gi.repository import Gst
 from enum import Enum
 
-from ximea_visualizer.mock_interface import Camera
+import numpy as np
+from gi.repository import Gst
+
+from camera_visualizer.camera_interface.mock_interface import Camera
 
 
 class SaveFormatEnum(Enum):
@@ -113,7 +114,7 @@ class V4L2Camera(Camera):
         pass
 
     def save_folder(self) -> Path:
-        return Path(".")
+        return Path("..")
 
     def exception_type(self):
         return RuntimeError
