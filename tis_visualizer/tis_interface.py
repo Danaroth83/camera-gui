@@ -14,7 +14,7 @@ from ximea_visualizer.mock_interface import Camera
 
 TIS_HEIGHT = 1200
 TIS_WIDTH = 1920
-TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.BayerGB16
+TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.Mono8
 
 TIS_ACCEPTED_PIXEL_FORMATS = [
     ic4.PixelFormat.Mono8,
