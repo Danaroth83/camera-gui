@@ -55,6 +55,9 @@ class TisCameraState:
         else:
             return self.save_folder / self.save_subfolder
 
+    def shape(self) -> tuple[int, ...]:
+        return PIXEL_FORMAT_TO_SHAPE[self.pixel_format]
+
     def bit_depth(self) -> int:
         bit_depth = PIXEL_FORMAT_TO_BIT_DEPTH_MAP[self.pixel_format]
         return bit_depth
@@ -135,8 +138,8 @@ class TisCamera(Camera):
         self.grabber.stream_stop()
         self.grabber.device_close()
 
-    def shape(self) -> tuple[int, int]:
-        return TIS_HEIGHT, TIS_WIDTH
+    def shape(self) -> tuple[int, ...]:
+        return self.state.shape()
 
     def bit_depth(self) -> int:
         return self.state.bit_depth()
