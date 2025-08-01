@@ -48,19 +48,44 @@ For visualization, you may also need to install this library:
 sudo apt install libxcb-xinerama0
 ```
 
+### Testing the visualizer
 
 From this moment on you should be able to connect the camera through USB to
 your machine and type:
 ```bash
 python camera_visualizer/gui.py
 ```
+
+You can also resolve the dependencies yourself and run the script directly without
+installing the library by typing:
+```bash
+python -m camera_visualizer.gui
+```
+
 A GUI will allow to select the camera model:
 - `mock` is a fake camera just to test the graphic interface;
 - `ximea` is the XIMEA camera model MQ02HG-IM-SM4x4-REDNIR;
 - `tis` is the Imaging Source camera model DFK 23UX236.
+and press the `Start` button.
+
+Even 
 
 
+You can also run two camera feeds at the same time by running:
+```bash
+python camera_visualizer/gui_double.py
+```
 
+For setting the exposure time, either:
+- Click the button `Estimate exposure time`
+- Change the exposure time in the box `Exposure time (us)`
+
+For saving video frames:
+- Type the save format;
+- Type the filename;
+- Press the `Record` button;
+- Press the `Stop recording` button to stop the recording. 
+Files will be saved in `data/[camera_name]/[timestamp]` and with a sequential index.
 
 where 10000 is the requested exposure time (10 seconds in this case).
 From the visualization applet, you can (while within the scope of the figure):
@@ -239,7 +264,7 @@ The design `cameras_94mm_v2.pdf` was originally made by:
 - Kuniaki Uto [uto@wise-sss.titech.ac.jp](mailto:uto@wise-sss.titech.ac.jp)
 
 
-## Developer
+## Developers
 
 Daniele Picone  
 Univ. Grenoble Alpes, CNRS, Grenoble INP, GIPSA-lab, 38000 Grenoble, France  

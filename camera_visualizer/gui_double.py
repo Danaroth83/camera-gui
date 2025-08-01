@@ -29,14 +29,14 @@ class DoubleVideoPlayer(QWidget):
 def main():
     app = QApplication(sys.argv)
     try:
-        from ximea_visualizer.ximea_interface import XimeaCamera
+        from camera_visualizer.camera_interface.ximea_interface import XimeaCamera
         camera_a = CameraEnum.XIMEA
     except ImportError:
         camera_a = CameraEnum.MOCK
     except Exception as e:
         raise e
     try:
-        from tis_visualizer.tis_interface import TisCamera
+        from camera_visualizer.camera_interface.tis_interface import TisCamera
         camera_b = CameraEnum.TIS
     except ImportError:
         camera_b = CameraEnum.MOCK

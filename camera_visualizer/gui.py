@@ -272,7 +272,7 @@ class VideoPlayer(QWidget):
 def main():
     app = QApplication(sys.argv)
     try:
-        from ximea_visualizer.ximea_interface import XimeaCamera
+        from camera_visualizer.camera_interface.ximea_interface import XimeaCamera
         camera_id = CameraEnum.XIMEA
     except ImportError:
         camera_id = CameraEnum.MOCK

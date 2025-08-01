@@ -197,10 +197,10 @@ def camera(camera_id: CameraEnum | str) -> Camera:
     if camera_id == CameraEnum.MOCK:
         return MockCamera()
     elif camera_id == CameraEnum.XIMEA:
-        from ximea_visualizer.ximea_interface import XimeaCamera
+        from camera_visualizer.camera_interface.ximea_interface import XimeaCamera
         return XimeaCamera()
     elif camera_id == CameraEnum.TIS:
-        from tis_visualizer.tis_interface import TisCamera
+        from camera_visualizer.camera_interface.tis_interface import TisCamera
         return TisCamera()
     else:
         raise ValueError(f"Camera f{camera_id} not known.")
