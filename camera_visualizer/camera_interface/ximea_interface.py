@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ximea import xiapi
 
-from ximea_visualizer.mock_interface import Camera
+from camera_visualizer.camera_interface.mock_interface import Camera
 
 XIMEA_MOSAIC_R = 4
 XIMEA_MOSAIC_C = 4
