@@ -3,13 +3,6 @@
 This code was originally produced for a user-friendly Python interface
 for the visualization of cameras through a device independent API.
 
-This code was originally developed for interfacing with:
-- the XIMEA camera model MQ02HG-IM-SM4x4-RedNir.
-  - A hyperspectral mosaic based camera with a 4x4 color filter array pattern
-    operating in the RED/NIR range
-- the Imaging Source camera model DFK 23UX236 
-  - A compact RGB camera with a Bayer patterned color filter array.
-  - 
 The code provides a graphical interface in PyQt5 which allows to:
 - visualize the data stream;
 - pause resume the acquisition;
@@ -19,7 +12,78 @@ The code provides a graphical interface in PyQt5 which allows to:
 - change the FPS;
 - set and dynamically assess the exposure time.
 
+
+This code was originally developed for interfacing with:
+- the XIMEA camera model MQ02HG-IM-SM4x4-REDNIR.
+  - A hyperspectral mosaic based camera with a 4x4 color filter array pattern
+    operating in the RED/NIR range
+- the Imaging Source camera model DFK 23UX236 
+  - A compact RGB camera with a Bayer patterned color filter array.
+
+In the acquisition campaign performed in Japan in the July/August 2025 period,
+the cameras were mounted on a robot model JetArm Track T1, and placed on a 
+tripod over its mechanical arm.  
+The 3d designs for accomodating for the cameras over the tripod are shared
+in the `data\plate_design` folder.
+
+
 # Installation instruction
+
+## Visualizer
+
+### Prerequisites
+
+The script was tested on a Linux machine running Ubuntu 22.04.5 LTS using 
+Wayland as windowing system.
+
+You can install the provided package as a library by going to the root folder
+of the cloned repository and typing:
+```bash
+pip install pip --upgrade
+pip install .
+```
+
+For visualization, you may also need to install this library:
+```bash
+sudo apt install libxcb-xinerama0
+```
+
+
+From this moment on you should be able to connect the camera through USB to
+your machine and type:
+```bash
+python camera_visualizer/gui.py
+```
+A GUI will allow to select the camera model:
+- `mock` is a fake camera just to test the graphic interface;
+- `ximea` is the XIMEA camera model MQ02HG-IM-SM4x4-REDNIR;
+- `tis` is the Imaging Source camera model DFK 23UX236.
+
+
+
+
+where 10000 is the requested exposure time (10 seconds in this case).
+From the visualization applet, you can (while within the scope of the figure):
+- Press P to pause/unpause.
+- Press M to switch between mosaiced and demosaiced view and viceversa.
+- Press B to switch between 10 bits/8 bits acquisition
+- Press R to start/stop recording frames to data/[timestamp].
+  - Remember to press R again or the acquisitions will continue indefinitely.
+  - You can select the savefile name by running the script with the `-n` 
+    argument. E.g., to save as `dark` within the save folder:
+    ```bash
+    python ximea_visualizer/visualization.py -n dark
+    ```
+- Press E to estimate the exposure time via binary search
+  - Keep the camera still while estimating.
+  - This is an experimental feature, so it may fail.
+  - Press E again to restart the estimation in case of failure.
+  - You may want to rerun the script with the estimated exposure time, e.g. 
+    for 10000 microseconds:
+    ```bash
+    python ximea_visualizer/visualization.py -e 10000
+    ```
+- To exit, just close the visualization applet.
 
 
 ## XIMEA API installation
@@ -155,58 +219,6 @@ import imagingcontrol4 as ic4
 ic4.Library.init()
 ic4.DeviceEnum.devices()
 ```
-
-## Script testing
-
-### Prerequisites
-
-This is a simple list of prerequisites for running the Python script.
-For Linux you typically require to have a Matplotlib renderer; these intructions should be enough:
-
-```bash
-pip install numpy
-pip install matplotlib
-pip install pyqt5
-```
-
-For visualization, you may also need to install this library:
-```bash
-sudo apt install libxcb-xinerama0
-```
-
-
-From this moment on you should be able to connect the camera through USB to
-your machine and type:
-```bash
-python ximea_visualizer/gui.py
-```
-A GUI will allow to select the camera model:
-- `mock` is a fake camera just to test the graphic interface
-- `ximea`: is 
-
-
-where 10000 is the requested exposure time (10 seconds in this case).
-From the visualization applet, you can (while within the scope of the figure):
-- Press P to pause/unpause.
-- Press M to switch between mosaiced and demosaiced view and viceversa.
-- Press B to switch between 10 bits/8 bits acquisition
-- Press R to start/stop recording frames to data/[timestamp].
-  - Remember to press R again or the acquisitions will continue indefinitely.
-  - You can select the savefile name by running the script with the `-n` 
-    argument. E.g., to save as `dark` within the save folder:
-    ```bash
-    python ximea_visualizer/visualization.py -n dark
-    ```
-- Press E to estimate the exposure time via binary search
-  - Keep the camera still while estimating.
-  - This is an experimental feature, so it may fail.
-  - Press E again to restart the estimation in case of failure.
-  - You may want to rerun the script with the estimated exposure time, e.g. 
-    for 10000 microseconds:
-    ```bash
-    python ximea_visualizer/visualization.py -e 10000
-    ```
-- To exit, just close the visualization applet.
 
 ## Plate designs
 
