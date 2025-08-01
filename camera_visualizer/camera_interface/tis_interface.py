@@ -222,7 +222,7 @@ def main():
 
     cam.open()
 
-    cam.grabber.device_property_map.set_value(property_name=ic4.PropId.PIXEL_FORMAT, value=ic4.PixelFormat.BayerGB16)
+    # cam.grabber.device_property_map.set_value(property_name=ic4.PropId.PIXEL_FORMAT, value=ic4.PixelFormat.BayerGB16)
 
     frame, frame_view = cam.get_frame(fps=10000)
     print(f"frame type: {frame.dtype}, max: {frame.max()}")

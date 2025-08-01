@@ -1,3 +1,4 @@
+import argparse
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -270,6 +271,11 @@ class VideoPlayer(QWidget):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Camera visualizer with optional window resize.")
+    parser.add_argument('--width', type=int, default=640, help='Window width')
+    parser.add_argument('--height', type=int, default=480, help='Window height')
+    args = parser.parse_args()
+
     app = QApplication(sys.argv)
     try:
         from camera_visualizer.camera_interface.ximea_interface import XimeaCamera
@@ -278,10 +284,12 @@ def main():
         camera_id = CameraEnum.MOCK
     except Exception as e:
         raise e
+
     player = VideoPlayer(camera_id=camera_id, fps=30)
-    player.resize(640, 480)
+    player.resize(w=args.width, h=args.height)
     player.show()
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     main()
