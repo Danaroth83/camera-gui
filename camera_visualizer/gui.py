@@ -13,13 +13,16 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QLineEdit,
     QFormLayout,
-    QComboBox,
+    QComboBox, QSizePolicy,
 )
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QImage, QPixmap
 
-from camera_visualizer.camera_interface.mock_interface import Camera, \
-    CameraEnum, camera
+from camera_visualizer.camera_interface.mock_interface import (
+    Camera,
+    CameraEnum,
+    camera,
+)
 from camera_visualizer.serializer import SaveFormatEnum
 
 
@@ -90,6 +93,23 @@ class VideoPlayer(QWidget):
         
         self.bit_depth_button = QPushButton(f"Toggle bit depth: {self.camera.bit_depth()}")
         self.bit_depth_button.clicked.connect(self.toggle_bit_depth)
+
+
+        # self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.play_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.pause_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.view_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.fps_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.exposure_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.filename_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.record_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.recording_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.record_format.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.camera_select.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.exposure_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.bit_depth_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
 
         # Layouts
         control_layout = QFormLayout()
@@ -286,7 +306,7 @@ def main():
         raise e
 
     player = VideoPlayer(camera_id=camera_id, fps=30)
-    player.resize(w=args.width, h=args.height)
+    player.resize(args.width, args.height)
     player.show()
     sys.exit(app.exec_())
 
