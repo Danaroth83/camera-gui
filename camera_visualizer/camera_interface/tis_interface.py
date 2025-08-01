@@ -14,11 +14,13 @@ ic4.Library.init()
 # Camera Constants
 TIS_HEIGHT = 1200
 TIS_WIDTH = 1920
+TIS_MIN_EXPOSURE_MS = 15
+TIS_MAX_EXPOSURE_MS = 33_333
+TIS_TIMEOUT_MS = 10_000
 
 # Default Camera States
 TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.Mono8
 TIS_DEFAULT_EXPOSURE_TIME_MS = 500
-TIS_DEFAULT_TIMEOUT_MS = 10_000
 
 TIS_ACCEPTED_PIXEL_FORMATS = [
     ic4.PixelFormat.Mono8,
@@ -50,10 +52,12 @@ PIXEL_FORMAT_TO_ENVI_FORMAT = {
 class TisCameraState:
     save_folder: Path
     current_exposure: float = TIS_DEFAULT_EXPOSURE_TIME_MS
-    timeout_ms: int = TIS_DEFAULT_TIMEOUT_MS
+    timeout_ms: int = TIS_TIMEOUT_MS
     pixel_format: ic4.PixelFormat = ic4.PixelFormat.BayerGB16
     demosaic: bool = False
     save_subfolder: str | None = None
+    min_exposure: float = TIS_MIN_EXPOSURE_MS
+    max_exposure: float = TIS_MAX_EXPOSURE_MS
 
     @property
     def save_path(self) -> Path | None:
@@ -203,7 +207,8 @@ class TisCamera(Camera):
 
     def init_exposure(self, max_exposure: int) -> None:
         """Initializing exposure value when launching automatic exposure search"""
-        pass
+        self.state.max_exposure = min(TIS_MAX_EXPOSURE_MS, max_exposure)
+        self.state.min_exposure = TIS_MIN_EXPOSURE_MS
 
     def adjust_exposure(self) -> None:
         """Adjust exposure at each iteration when applying automatic exposure search"""
