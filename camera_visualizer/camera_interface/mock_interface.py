@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from datetime import datetime
 from enum import Enum
+from typing import Type
 
 import numpy as np
 from camera_visualizer.serializer import save_frame, SaveFormatEnum
@@ -26,7 +27,7 @@ class Camera(ABC):
         ...
 
     @abstractmethod
-    def get_frame(self, timeout_ms: int) -> tuple[np.ndarray, np.ndarray]:
+    def get_frame(self, fps: float) -> tuple[np.ndarray, np.ndarray]:
         ...
 
     @abstractmethod
@@ -70,7 +71,7 @@ class Camera(ABC):
         ...
 
     @abstractmethod
-    def exception_type(self) -> Exception:
+    def exception_type(self) -> Type[Exception]:
         ...
 
     def save_frame(
@@ -130,12 +131,11 @@ class MockCamera(Camera):
         self._exposure = exposure
         return True
 
-    def init_exposure(self) -> None:
-        self._exposure_max = 500_000
+    def init_exposure(self, max_exposure: int) -> None:
+        self._exposure_max = min(max_exposure, 500_000)
         self._exposure_min = 100
 
-    def adjust_exposure(self, max_exposure: int) -> None:
-        exposure_max = min(self._max_exposure, max_exposure)
+    def adjust_exposure(self) -> None:
         self._exposure = (self._exposure_min + self._exposure_max) // 2
 
     def check_exposure(self, frame: np.ndarray) -> bool:
@@ -150,7 +150,7 @@ class MockCamera(Camera):
         else:
             return False
 
-    def get_frame(self, timeout_ms: int) -> tuple[np.ndarray, np.ndarray]:
+    def get_frame(self, fps: float) -> tuple[np.ndarray, np.ndarray]:
         """Returns a (H, W) grayscale float32 NumPy array in [0, 1]"""
         img = np.zeros(self.shape(), dtype=np.float32)
         if self._toggle_view == 0:
@@ -182,7 +182,7 @@ class MockCamera(Camera):
             return self._save_folder
         return self._save_folder / self._subfolder
     
-    def exception_type(self):
+    def exception_type(self) -> Type[Exception]:
         return Exception
 
 
