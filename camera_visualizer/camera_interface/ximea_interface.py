@@ -159,9 +159,9 @@ def find_exposure_for_saturation(
     Binary search for exposure time to keep saturated pixels under max_saturation.
     """
     # Amount of allowed saturated pixels
-    max_saturation = 1000 if state.bit_depth_10bits else 8000
+    max_saturation = 1000 if state.bit_depth_10bits else 4000
     # Tolerated difference in number of saturated pixels
-    tol = 125 if state.bit_depth_10bits else 1000
+    tol = 125 if state.bit_depth_10bits else 500
 
     converged = False
     saturated = (frame >= state.dynamic_range).sum()

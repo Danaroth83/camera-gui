@@ -17,9 +17,11 @@ TIS_WIDTH = 1920
 TIS_MIN_EXPOSURE_MS = 15
 TIS_MAX_EXPOSURE_MS = 33_333
 TIS_TIMEOUT_MS = 10_000
+TIS_EXPOSURE_INCREMENT = 10
+
 
 # Default Camera States
-TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.Mono8
+TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.BayerGB16
 TIS_DEFAULT_EXPOSURE_TIME_MS = 500
 
 TIS_ACCEPTED_PIXEL_FORMATS = [
@@ -53,7 +55,7 @@ class TisCameraState:
     save_folder: Path
     current_exposure: float = TIS_DEFAULT_EXPOSURE_TIME_MS
     timeout_ms: int = TIS_TIMEOUT_MS
-    pixel_format: ic4.PixelFormat = ic4.PixelFormat.BayerGB16
+    pixel_format: ic4.PixelFormat = TIS_DEFAULT_PIXEL_FORMAT
     demosaic: bool = False
     save_subfolder: str | None = None
     min_exposure: float = TIS_MIN_EXPOSURE_MS
@@ -72,6 +74,9 @@ class TisCameraState:
     def bit_depth(self) -> int:
         bit_depth = PIXEL_FORMAT_TO_BIT_DEPTH_MAP[self.pixel_format]
         return bit_depth
+
+    def dynamic_range(self) -> int:
+        return 2 ** self.bit_depth() - 1
 
 
 def get_envi_header(state: TisCameraState) -> dict:
@@ -166,7 +171,7 @@ class TisCamera(Camera):
             self,
             frame: np.ndarray,
     ) -> np.ndarray:
-        frame_normalized = frame.astype(np.float32) / (2 ** self.bit_depth() - 1)
+        frame_normalized = frame.astype(np.float32) / self.state.dynamic_range()
         frame_view = np.mean(frame_normalized, axis=-1)
         return frame_view
 
@@ -205,6 +210,35 @@ class TisCamera(Camera):
         self.state.current_exposure = exposure
         return True
 
+    def _find_exposure_for_saturation(
+            self,
+            frame: np.ndarray,
+    ) -> bool:
+        """
+        Binary search for exposure time to keep saturated pixels under max_saturation.
+        """
+        # Amount of allowed saturated pixels
+        max_saturation = 1000 if self.state.bit_depth() == 16 else 8000
+        # Tolerated difference in number of saturated pixels
+        tol = 125 if self.state.bit_depth() == 16 else 1000
+
+        converged = False
+        saturated = (frame >= self.state.dynamic_range()).sum()
+        if saturated > max_saturation:
+            self.state.max_exposure = self.state.current_exposure - 1
+        else:
+            self.state.min_exposure = self.state.current_exposure + 1
+        tmp = self.state.max_exposure - self.state.min_exposure
+        mid_exposure = int((self.state.max_exposure + self.state.min_exposure) // 2)
+
+        if (
+                abs(saturated - max_saturation) < tol
+                or abs(tmp) < 10
+                or abs(self.state.current_exposure - mid_exposure) <= 2 * TIS_EXPOSURE_INCREMENT
+        ):
+            converged = True
+        return converged
+
     def init_exposure(self, max_exposure: int) -> None:
         """Initializing exposure value when launching automatic exposure search"""
         self.state.max_exposure = min(TIS_MAX_EXPOSURE_MS, max_exposure)
@@ -212,11 +246,13 @@ class TisCamera(Camera):
 
     def adjust_exposure(self) -> None:
         """Adjust exposure at each iteration when applying automatic exposure search"""
-        pass
+        self.set_exposure(
+            exposure=int((self.state.max_exposure + self.state.min_exposure) // 2),
+        )
 
     def check_exposure(self, frame: np.ndarray) -> bool:
         """Check convergence of automatic exposure"""
-        pass
+        return self._find_exposure_for_saturation(frame=frame)
 
     def toggle_view(self) -> None:
         self.state.demosaic = not self.state.demosaic
@@ -230,6 +266,7 @@ def main():
     # cam.grabber.device_property_map.set_value(property_name=ic4.PropId.PIXEL_FORMAT, value=ic4.PixelFormat.BayerGB16)
 
     frame, frame_view = cam.get_frame(fps=10000)
+    print(f"pixel format: {cam.sink.output_image_type.pixel_format.name}")
     print(f"frame type: {frame.dtype}, max: {frame.max()}")
     print(f"frame_view type: {frame_view.dtype}, max: {frame_view.max()}")
 
