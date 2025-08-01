@@ -57,6 +57,7 @@ class VideoPlayer(QWidget):
 
         self.setWindowTitle("Camera Video Player")
         self.label = QLabel("Waiting for image...")
+        self.label.setFixedHeight(480)
 
         self.play_button = QPushButton("Play")
         self.play_button.clicked.connect(self.toggle_running)
@@ -79,6 +80,7 @@ class VideoPlayer(QWidget):
         self.record_button.clicked.connect(self.toggle_recording)
         self.recording_label = QLabel("")
         self.recording_label.setStyleSheet("color: red; font-weight: bold")
+        self.recording_label.setFixedHeight(30)
 
         self.record_format = QComboBox()
         self.record_format.addItems([e.value for e in SaveFormatEnum])
@@ -115,6 +117,7 @@ class VideoPlayer(QWidget):
         layout.addWidget(self.record_button)
         layout.addWidget(self.record_format)
         layout.addLayout(control_layout)
+        layout.addStretch()
         self.setLayout(layout)
 
         self.timer = QTimer()
@@ -217,17 +220,7 @@ class VideoPlayer(QWidget):
             )
         else:
             ValueError("Image not displayable")
-        return QPixmap.fromImage(qimg.copy())
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self.update_frame_display()
-
-    def update_frame_display(self):
-        if self.current_image is not None:
-            self.label.setPixmap(self.current_image.scaled(
-                self.label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
-            ))
+        return qimg.copy()
 
 
     def update_frame(self):
@@ -239,7 +232,10 @@ class VideoPlayer(QWidget):
         frame_save, frame_view = self.camera.get_frame(fps=self.state.fps)
         if frame_view is not None:
             self.current_image = self.numpy_to_pixmap_format(arr=frame_view)
-            self.label.setPixmap(self.current_image)
+            pixmap = QPixmap.fromImage(self.current_image)
+            self.label.setPixmap(pixmap.scaled(
+                self.label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            ))
         if self.state.recording:
             filename = f"frame_{self.state.frame_counter:04d}"
             self.camera.save_frame(
