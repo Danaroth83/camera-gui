@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
     QFormLayout,
     QComboBox, QSizePolicy,
 )
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
 
 from camera_visualizer.camera_interface.mock_interface import (
@@ -42,7 +42,8 @@ class GuiState:
 
 class VideoPlayer(QWidget):
     camera: Camera
-
+    state: GuiState
+    current_image: QPixmap | None
 
     def __init__(
         self,
@@ -52,9 +53,11 @@ class VideoPlayer(QWidget):
         super().__init__()
         self.camera = camera(camera_id=camera_id)
         self.state = GuiState(selected_camera=camera_id, fps=fps)
+        self.current_image = None
 
         self.setWindowTitle("Camera Video Player")
         self.label = QLabel("Waiting for image...")
+
         self.play_button = QPushButton("Play")
         self.play_button.clicked.connect(self.toggle_running)
         self.pause_button = QPushButton("Pause")
@@ -93,23 +96,6 @@ class VideoPlayer(QWidget):
         
         self.bit_depth_button = QPushButton(f"Toggle bit depth: {self.camera.bit_depth()}")
         self.bit_depth_button.clicked.connect(self.toggle_bit_depth)
-
-
-        # self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.play_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.pause_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.view_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.fps_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.exposure_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.filename_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.record_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.recording_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.record_format.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.camera_select.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.exposure_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.bit_depth_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
 
         # Layouts
         control_layout = QFormLayout()
@@ -210,8 +196,7 @@ class VideoPlayer(QWidget):
         self.state.selected_camera = CameraEnum(selected_value)
 
 
-    @staticmethod
-    def numpy_to_pixmap(arr: np.ndarray):
+    def numpy_to_pixmap_format(self, arr: np.ndarray):
         arr = np.clip(arr * 255.0, 0, 255).astype(np.uint8)
         if arr.ndim == 2 or (arr.ndim == 3 and arr.shape[2] == 1):  # Grayscale
             qimg = QImage(
@@ -234,6 +219,17 @@ class VideoPlayer(QWidget):
             ValueError("Image not displayable")
         return QPixmap.fromImage(qimg.copy())
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_frame_display()
+
+    def update_frame_display(self):
+        if self.current_image is not None:
+            self.label.setPixmap(self.current_image.scaled(
+                self.label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            ))
+
+
     def update_frame(self):
         if (not self.state.running) or self.state.paused:
             return
@@ -242,8 +238,8 @@ class VideoPlayer(QWidget):
             self.exposure_input.setText(f"{self.camera.exposure()}")
         frame_save, frame_view = self.camera.get_frame(fps=self.state.fps)
         if frame_view is not None:
-            pixmap = self.numpy_to_pixmap(arr=frame_view)
-            self.label.setPixmap(pixmap)
+            self.current_image = self.numpy_to_pixmap_format(arr=frame_view)
+            self.label.setPixmap(self.current_image)
         if self.state.recording:
             filename = f"frame_{self.state.frame_counter:04d}"
             self.camera.save_frame(
