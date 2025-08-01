@@ -286,7 +286,7 @@ def main():
         raise e
 
     player = VideoPlayer(camera_id=camera_id, fps=30)
-    player.resize(w=args.width, h=args.height)
+    player.resize(args.width, args.height)
     player.show()
     sys.exit(app.exec_())
 
