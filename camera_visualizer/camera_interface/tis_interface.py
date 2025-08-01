@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Type
 
 import imagingcontrol4 as ic4
 import numpy as np
@@ -10,9 +11,14 @@ from camera_visualizer.paths import load_project_dir
 
 ic4.Library.init()
 
+# Camera Constants
 TIS_HEIGHT = 1200
 TIS_WIDTH = 1920
+
+# Default Camera States
 TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.Mono8
+TIS_DEFAULT_EXPOSURE_TIME_MS = 500
+TIS_DEFAULT_TIMEOUT_MS = 10_000
 
 TIS_ACCEPTED_PIXEL_FORMATS = [
     ic4.PixelFormat.Mono8,
@@ -20,6 +26,7 @@ TIS_ACCEPTED_PIXEL_FORMATS = [
     ic4.PixelFormat.BayerGB16,
 ]
 
+# Camera Mappers
 PIXEL_FORMAT_TO_BIT_DEPTH_MAP = {
     ic4.PixelFormat.Mono8: 8,
     ic4.PixelFormat.BayerGB8: 8,
@@ -42,8 +49,8 @@ PIXEL_FORMAT_TO_ENVI_FORMAT = {
 @dataclass
 class TisCameraState:
     save_folder: Path
-    current_exposure: int
-    timeout_ms: int = 10_000
+    current_exposure: float = TIS_DEFAULT_EXPOSURE_TIME_MS
+    timeout_ms: int = TIS_DEFAULT_TIMEOUT_MS
     pixel_format: ic4.PixelFormat = ic4.PixelFormat.BayerGB16
     demosaic: bool = False
     save_subfolder: str | None = None
@@ -107,7 +114,7 @@ class TisCamera(Camera):
     sink: ic4.SnapSink | None
     state: TisCameraState
 
-    def __init__(self, pixel_format: ic4.PixelFormat = TIS_DEFAULT_PIXEL_FORMAT):
+    def __init__(self):
         self.grabber = ic4.Grabber(dev=None)
         self.sink = None
         data_path = load_project_dir() / "data"
@@ -116,14 +123,18 @@ class TisCamera(Camera):
         data_path.mkdir(parents=False, exist_ok=True)
         state = TisCameraState(
             save_folder=data_path,
-            current_exposure=10_000,
-            pixel_format=pixel_format,
+            current_exposure=TIS_DEFAULT_EXPOSURE_TIME_MS,
+            pixel_format=TIS_DEFAULT_PIXEL_FORMAT,
         )
         self.state = state
 
     def open(self):
         first_device_info = ic4.DeviceEnum.devices()[0]
         self.grabber.device_open(dev=first_device_info)
+        self.grabber.device_property_map.set_value(
+            property_name=ic4.PropId.EXPOSURE_TIME,
+            value=self.state.current_exposure,
+        )
         self.sink = ic4.SnapSink(
             accepted_pixel_formats=[
                 self.state.pixel_format,
@@ -179,20 +190,27 @@ class TisCamera(Camera):
     def exception_type(self) -> Type[Exception]:
         return ic4.IC4Exception
 
-    def exposure(self) -> int:
+    def exposure(self) -> float:
         return self.state.current_exposure
 
     def set_exposure(self, exposure: int) -> bool:
+        self.grabber.device_property_map.set_value(
+            property_name=ic4.PropId.EXPOSURE_TIME,
+            value=exposure,
+        )
         self.state.current_exposure = exposure
         return True
 
     def init_exposure(self, max_exposure: int) -> None:
+        """Initializing exposure value when launching automatic exposure search"""
         pass
 
     def adjust_exposure(self) -> None:
+        """Adjust exposure at each iteration when applying automatic exposure search"""
         pass
 
     def check_exposure(self, frame: np.ndarray) -> bool:
+        """Check convergence of automatic exposure"""
         pass
 
     def toggle_view(self) -> None:
@@ -200,11 +218,13 @@ class TisCamera(Camera):
 
 
 def main():
-    cam = TisCamera(pixel_format=ic4.PixelFormat.BayerGB16)
+    cam = TisCamera()
 
     cam.open()
 
-    frame, frame_view = cam.get_frame()
+    cam.grabber.device_property_map.set_value(property_name=ic4.PropId.PIXEL_FORMAT, value=ic4.PixelFormat.BayerGB16)
+
+    frame, frame_view = cam.get_frame(fps=10000)
     print(f"frame type: {frame.dtype}, max: {frame.max()}")
     print(f"frame_view type: {frame_view.dtype}, max: {frame_view.max()}")
 

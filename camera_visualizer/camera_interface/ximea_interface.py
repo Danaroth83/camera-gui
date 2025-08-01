@@ -231,7 +231,7 @@ class XimeaCamera(Camera):
     def bit_depth(self) -> int:
         return self.state.bit_depth
 
-    def get_frame(self, timeout_ms: int) -> tuple[np.ndarray, np.ndarray]:
+    def get_frame(self, fps: float) -> tuple[np.ndarray, np.ndarray]:
         if self.img is None:
             raise ValueError("Camera was not opened. Run self.open() before this operation.")
         return get_frame(
