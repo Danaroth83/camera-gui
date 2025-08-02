@@ -1,16 +1,48 @@
 import argparse
 import subprocess
+import os
 
 import numpy as np
 import scipy
 
 
-def capture_bayer_image_in_memory(device="/dev/video2", width=640, height=480, pixfmt="GB16"):
+def list_video_devices():
+    """Returns a list of /dev/video* devices."""
+    return sorted(f"/dev/{d}" for d in os.listdir("/dev") if d.startswith("video"))
+
+def supports_bg16(device):
+    """Checks if a video device supports the BG16 pixel format."""
+    try:
+        result = subprocess.run(
+            ["v4l2-ctl", "--device", device, "--list-formats"],
+            capture_output=True, check=True, text=True
+        )
+        return "BG16" in result.stdout
+    except subprocess.CalledProcessError:
+        return False
+
+def find_bg16_device():
+    """Finds the first /dev/videoX device that supports BG16 format."""
+    for dev in list_video_devices():
+        if supports_bg16(dev):
+            return dev
+    return None
+
+def capture_bayer_image_in_memory(
+    device: str | None,
+    width: int=640,
+    height: int=480,
+    pixfmt="GB16",
+):
     """Captures one BG16 frame using v4l2-ctl and returns it as a NumPy array."""
+    if device is None:
+        device = find_bg16_device()
+        if device is None:
+            raise ValueError("Device not found")
+
     cmd = [
         "v4l2-ctl",
         f"--device={device}",
-        "--set-parm=5",
         f"--set-fmt-video=width={width},height={height},pixelformat={pixfmt}",
         "--stream-mmap",
         "--stream-count=1",
