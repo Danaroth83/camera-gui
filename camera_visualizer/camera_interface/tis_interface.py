@@ -7,7 +7,7 @@ import imagingcontrol4 as ic4
 import numpy as np
 
 from camera_visualizer.camera_interface.mock_interface import Camera
-from camera_visualizer.paths import load_project_dir
+from camera_visualizer.paths import load_data_path
 
 ic4.Library.init()
 
@@ -126,7 +126,7 @@ class TisCamera(Camera):
     def __init__(self):
         self.grabber = ic4.Grabber(dev=None)
         self.sink = None
-        data_path = load_project_dir() / "data"
+        data_path = data_path()
         data_path.mkdir(parents=False, exist_ok=True)
         data_path = data_path / "tis"
         data_path.mkdir(parents=False, exist_ok=True)

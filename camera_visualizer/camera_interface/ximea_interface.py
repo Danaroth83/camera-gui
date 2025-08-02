@@ -8,6 +8,7 @@ from pathlib import Path
 from ximea import xiapi
 
 from camera_visualizer.camera_interface.mock_interface import Camera
+from camera_visualizer.paths import load_data_path
 
 XIMEA_MOSAIC_R = 4
 XIMEA_MOSAIC_C = 4
@@ -205,7 +206,7 @@ class XimeaCamera(Camera):
     def __init__(self):
         self.cam = xiapi.Camera()
         self.img = None
-        data_path = Path(__file__).resolve().parents[1] / "data"
+        data_path = load_data_path()
         data_path.mkdir(parents=False, exist_ok=True)
         data_path = data_path / "ximea"
         data_path.mkdir(parents=False, exist_ok=True)

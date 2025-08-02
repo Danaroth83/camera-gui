@@ -5,6 +5,8 @@ from enum import Enum
 from typing import Type
 
 import numpy as np
+
+from camera_visualizer.paths import load_data_path
 from camera_visualizer.serializer import save_frame, SaveFormatEnum
 
 
@@ -103,7 +105,7 @@ class MockCamera(Camera):
         self._bit_depth = 8
         self._counter = 0
         self._toggle_view = 0
-        data_path = Path(__file__).resolve().parents[1] / "data/mock"
+        data_path = load_data_path() / "mock"
         data_path.mkdir(parents=True, exist_ok=True)
         self._save_folder = data_path
         self._subfolder = None
