@@ -1,7 +1,7 @@
 import subprocess
 import numpy as np
 
-def capture_bayer_image_in_memory(device="/dev/video2", width=640, height=480, pixfmt="BG16"):
+def capture_bayer_image_in_memory(device="/dev/video2", width=640, height=480, pixfmt="GB16"):
     """Captures one BG16 frame using v4l2-ctl and returns it as a NumPy array."""
     cmd = [
         "v4l2-ctl",
@@ -24,23 +24,29 @@ def demosaic_bilinear_gbrg(bayer: np.ndarray) -> np.ndarray:
     h, w = bayer.shape
     rgb = np.zeros((h, w, 3), dtype=np.float32)
 
-    # Green channel (on GBRG it's on (even,odd) and (odd,even))
-    rgb[0::2, 1::2, 1] = bayer[0::2, 1::2]  # even rows, odd cols
-    rgb[1::2, 0::2, 1] = bayer[1::2, 0::2]  # odd rows, even cols
-    rgb[0::2, 0::2, 1] = (bayer[0::2, 1:-1:2] + bayer[0::2, 0:-2:2]) / 2  # interpolate horizontally
-    rgb[1::2, 1::2, 1] = (bayer[0:-2:2, 1::2] + bayer[2::2, 1::2]) / 2    # interpolate vertically
+    # Green channel (on GBRG it's on (even, even) and (odd, odd))
+    rgb[0::2, 0::2, 1] = bayer[0::2, 0::2]  # even rows, even cols
+    rgb[1::2, 1::2, 1] = bayer[1::2, 1::2]  # odd rows, odd cols
+    rgb[0::2, 1::2, 1] = (bayer[0::2, 0:-2:2] + bayer[0::2, 2::2]) / 2  # horizontal interp
+    rgb[1::2, 0::2, 1] = (bayer[0:-2:2, 0::2] + bayer[2::2, 0::2]) / 2  # vertical interp
 
-    # Red channel (at (even, even))
-    rgb[0::2, 0::2, 0] = bayer[0::2, 0::2]
-    rgb[0::2, 1::2, 0] = (bayer[0::2, 0:-2:2] + bayer[0::2, 2::2]) / 2
-    rgb[1::2, 0::2, 0] = (bayer[0:-2:2, 0::2] + bayer[2::2, 0::2]) / 2
-    rgb[1::2, 1::2, 0] = (bayer[0:-2:2, 0:-2:2] + bayer[0:-2:2, 2::2] + bayer[2::2, 0:-2:2] + bayer[2::2, 2::2]) / 4
+    # Red channel (at (odd, even))
+    rgb[1::2, 0::2, 0] = bayer[1::2, 0::2]
+    rgb[1::2, 1::2, 0] = (bayer[1::2, 0:-2:2] + bayer[1::2, 2::2]) / 2  # horizontal
+    rgb[0::2, 0::2, 0] = (bayer[0:-2:2, 0::2] + bayer[2::2, 0::2]) / 2  # vertical
+    rgb[0::2, 1::2, 0] = (
+        bayer[0:-2:2, 0:-2:2] + bayer[0:-2:2, 2::2] +
+        bayer[2::2, 0:-2:2] + bayer[2::2, 2::2]
+    ) / 4  # diagonal
 
-    # Blue channel (at (odd, odd))
-    rgb[1::2, 1::2, 2] = bayer[1::2, 1::2]
-    rgb[0::2, 1::2, 2] = (bayer[1::2, 1::2] + bayer[1::2, 1::2]) / 2
-    rgb[1::2, 0::2, 2] = (bayer[1::2, 1::2] + bayer[1::2, 1::2]) / 2
-    rgb[0::2, 0::2, 2] = (bayer[1::2, 1::2] + bayer[1::2, 1::2] + bayer[1::2, 1::2] + bayer[1::2, 1::2]) / 4
+    # Blue channel (at (even, odd))
+    rgb[0::2, 1::2, 2] = bayer[0::2, 1::2]
+    rgb[0::2, 0::2, 2] = (bayer[0::2, 1:-1:2] + bayer[0::2, 3::2]) / 2  # horizontal
+    rgb[1::2, 1::2, 2] = (bayer[0:-2:2, 1::2] + bayer[2::2, 1::2]) / 2  # vertical
+    rgb[1::2, 0::2, 2] = (
+        bayer[0:-2:2, 1:-1:2] + bayer[0:-2:2, 3::2] +
+        bayer[2::2, 1:-1:2] + bayer[2::2, 3::2]
+    ) / 4  # diagonal
 
     return rgb
 
@@ -58,7 +64,7 @@ def bayer_to_rgb(bayer_raw: np.ndarray, demosaic: bool) -> np.ndarray:
 # === Usage ===
 if __name__ == "__main__":
     width, height = 640, 480
-    bayer = capture_bayer_image_in_memory("/dev/video2", width, height, pixfmt="BG16")
+    bayer = capture_bayer_image_in_memory("/dev/video2", width, height, pixfmt="GB16")
     rgb = bayer_to_rgb(bayer, demosaic=True)
     print(f"Bayer shape: {bayer.shape}")
     print(f"Bayer dtype: {bayer.dtype}")
