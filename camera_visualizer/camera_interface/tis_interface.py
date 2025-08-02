@@ -162,6 +162,18 @@ class TisCamera(Camera):
         first_device_info = ic4.DeviceEnum.devices()[0]
         self.grabber.device_open(dev=first_device_info)
         self.grabber.device_property_map.set_value(
+            property_name=ic4.PropId.PIXEL_FORMAT,
+            value=TIS_DEFAULT_PIXEL_FORMAT,
+        )
+        self.grabber.device_property_map.set_value(
+            property_name=ic4.PropId.WIDTH,
+            value=TIS_WIDTH,
+        )
+        self.grabber.device_property_map.set_value(
+            property_name=ic4.PropId.HEIGHT,
+            value=TIS_HEIGHT,
+        )
+        self.grabber.device_property_map.set_value(
             property_name=ic4.PropId.EXPOSURE_TIME,
             value=self.state.current_exposure,
         )
