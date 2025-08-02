@@ -159,9 +159,9 @@ def find_exposure_for_saturation(
     Binary search for exposure time to keep saturated pixels under max_saturation.
     """
     # Amount of allowed saturated pixels
-    max_saturation = 1000 if state.bit_depth_10bits else 4000
+    max_saturation = 1000 if state.bit_depth_10bits else 8000
     # Tolerated difference in number of saturated pixels
-    tol = 125 if state.bit_depth_10bits else 500
+    tol = 250 if state.bit_depth_10bits else 2000
 
     converged = False
     saturated = (frame >= state.dynamic_range).sum()
@@ -245,6 +245,9 @@ class XimeaCamera(Camera):
 
     def exposure(self) -> int:
         return int(self.state.current_exposure)
+
+    def exposure_range(self) -> tuple[int, int]:
+        return XIMEA_MIN_EXPOSURE, XIMEA_MAX_EXPOSURE
 
     def set_exposure(self, exposure: int) -> bool:
         if abs(self.state.current_exposure - exposure) <= XIMEA_EXPOSURE_INCREMENT:

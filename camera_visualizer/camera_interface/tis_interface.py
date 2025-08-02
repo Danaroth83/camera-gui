@@ -202,6 +202,9 @@ class TisCamera(Camera):
     def exposure(self) -> float:
         return self.state.current_exposure
 
+    def exposure_range(self) -> tuple[int, int]:
+        return TIS_MIN_EXPOSURE_MS * 1000, TIS_MAX_EXPOSURE_MS * 1000
+
     def set_exposure(self, exposure: int) -> bool:
         self.grabber.device_property_map.set_value(
             property_name=ic4.PropId.EXPOSURE_TIME,
@@ -218,9 +221,9 @@ class TisCamera(Camera):
         Binary search for exposure time to keep saturated pixels under max_saturation.
         """
         # Amount of allowed saturated pixels
-        max_saturation = 1000 if self.state.bit_depth() == 16 else 8000
+        max_saturation = 100 if self.state.bit_depth() == 16 else 8000
         # Tolerated difference in number of saturated pixels
-        tol = 125 if self.state.bit_depth() == 16 else 1000
+        tol = 20 if self.state.bit_depth() == 16 else 1000
 
         converged = False
         saturated = (frame >= self.state.dynamic_range()).sum()
@@ -241,7 +244,7 @@ class TisCamera(Camera):
 
     def init_exposure(self, max_exposure: int) -> None:
         """Initializing exposure value when launching automatic exposure search"""
-        self.state.max_exposure = min(TIS_MAX_EXPOSURE_MS, max_exposure)
+        self.state.max_exposure = min(TIS_MAX_EXPOSURE_MS, int(max_exposure // 1000))
         self.state.min_exposure = TIS_MIN_EXPOSURE_MS
 
     def adjust_exposure(self) -> None:

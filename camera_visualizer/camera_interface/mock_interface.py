@@ -38,6 +38,10 @@ class Camera(ABC):
     def exposure(self) -> int:
         ...
 
+    @staticmethod
+    def exposure_range(self) -> tuple[int, int]:
+        ...
+
     @abstractmethod
     def set_exposure(self, exposure: int) -> bool:
         ...
@@ -124,6 +128,9 @@ class MockCamera(Camera):
 
     def exposure(self):
         return self._exposure
+
+    def exposure_range(self) -> tuple[int, int]:
+        return 100, 500_000
 
     def set_exposure(self, exposure: int) -> bool:
         if exposure >= self._exposure_max or exposure <= self._exposure_min:
