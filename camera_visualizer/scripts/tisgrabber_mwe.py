@@ -3,7 +3,6 @@ gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
 
 import numpy as np
-from skimage.color import demosaicing_CFA_Bayer_bilinear
 
 FPS = 30
 WIDTH = 640
@@ -13,16 +12,45 @@ USE_16BIT = True
 PIXEL_FORMAT = "GB16" if USE_16BIT else "GBRG"
 BAYER_PATTERN = 'GB'  # For GBRG / GB16
 
+def demosaic_bilinear_gbrg(bayer: np.ndarray) -> np.ndarray:
+    """
+    Perform manual bilinear interpolation for a GBRG Bayer pattern.
+    Input: 2D bayer image (uint8 or uint16)
+    Output: 3D RGB image (uint8)
+    """
+    h, w = bayer.shape
+    rgb = np.zeros((h, w, 3), dtype=np.float32)
 
-def bayer_to_rgb(bayer_raw: np.ndarray) -> np.ndarray:
+    # Green channel (on GBRG it's on (even,odd) and (odd,even))
+    rgb[0::2, 1::2, 1] = bayer[0::2, 1::2]  # even rows, odd cols
+    rgb[1::2, 0::2, 1] = bayer[1::2, 0::2]  # odd rows, even cols
+    rgb[0::2, 0::2, 1] = (bayer[0::2, 1:-1:2] + bayer[0::2, 0:-2:2]) / 2  # interpolate horizontally
+    rgb[1::2, 1::2, 1] = (bayer[0:-2:2, 1::2] + bayer[2::2, 1::2]) / 2    # interpolate vertically
+
+    # Red channel (at (even, even))
+    rgb[0::2, 0::2, 0] = bayer[0::2, 0::2]
+    rgb[0::2, 1::2, 0] = (bayer[0::2, 0:-2:2] + bayer[0::2, 2::2]) / 2
+    rgb[1::2, 0::2, 0] = (bayer[0:-2:2, 0::2] + bayer[2::2, 0::2]) / 2
+    rgb[1::2, 1::2, 0] = (bayer[0:-2:2, 0:-2:2] + bayer[0:-2:2, 2::2] + bayer[2::2, 0:-2:2] + bayer[2::2, 2::2]) / 4
+
+    # Blue channel (at (odd, odd))
+    rgb[1::2, 1::2, 2] = bayer[1::2, 1::2]
+    rgb[0::2, 1::2, 2] = (bayer[1::2, 1::2] + bayer[1::2, 1::2]) / 2
+    rgb[1::2, 0::2, 2] = (bayer[1::2, 1::2] + bayer[1::2, 1::2]) / 2
+    rgb[0::2, 0::2, 2] = (bayer[1::2, 1::2] + bayer[1::2, 1::2] + bayer[1::2, 1::2] + bayer[1::2, 1::2]) / 4
+
+    return rgb
+
+
+def bayer_to_rgb(bayer_raw: np.ndarray, demosaic: bool) -> np.ndarray:
     # Normalize 16-bit to float for demosaicing
     if bayer_raw.dtype == np.uint16:
-        bayer_float = bayer_raw.astype(np.float32) / 65535.0
+        out = bayer_raw.astype(np.float32) / 65535.0
     else:
-        bayer_float = bayer_raw.astype(np.float32) / 255.0
-
-    rgb = demosaicing_CFA_Bayer_bilinear(bayer_float, pattern=f'{BAYER_PATTERN}RG')
-    return np.clip(rgb * 255, 0, 255).astype(np.uint8)
+        out = bayer_raw.astype(np.float32) / 255.0
+    if demosaic:
+        out = demosaic_bilinear_gbrg(out)
+    return out
 
 
 def main():
@@ -63,7 +91,8 @@ def main():
     pipeline.set_state(Gst.State.NULL)
 
     print("Frame shape:", frame.shape, "dtype:", frame.dtype)
-
+    rgb = bayer_to_rgb(frame, demosaic=True)
+    print("RGB shape:", rgb.shape, "dtype:", rgb.dtype)
 
 if __name__ == "__main__":
     main()
