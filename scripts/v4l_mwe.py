@@ -1,3 +1,4 @@
+import argparse
 import subprocess
 
 import numpy as np
@@ -26,14 +27,14 @@ def demosaic_cfa_bayer_gbrb_bilinear(bayer: np.ndarray):
 
     # Red
     out[1::2, 0::2, 0] = bayer[1::2, 0::2]
-    out[..., 0] = scipy.mdimage.convolve(out[..., 0], f_r)
+    out[..., 0] = scipy.ndimage.convolve(out[..., 0], f_r)
     # Green
     out[0::2, 0::2, 1] = bayer[0::2, 0::2]
     out[1::2, 1::2, 1] = bayer[1::2, 1::2]
     out[..., 1] = scipy.ndimage.convolve(out[..., 1], f_g)
     # Blue
     out[0::2, 1::2, 2] = bayer[0::2, 1::2]
-    out[..., 2] = scipy.mdimage.convolve(out[..., 2], f_r)
+    out[..., 2] = scipy.ndimage.convolve(out[..., 2], f_r)
 
     return out
 
@@ -44,13 +45,23 @@ def bayer_to_rgb(bayer_raw: np.ndarray, demosaic: bool) -> np.ndarray:
     else:
         out = bayer_raw.astype(np.float32) / 255.0
     if demosaic:
-        out = demosaic_cfa_bayer_gbrb_bilinear(out, pattern="GBRG")
-    return out
+        out = demosaic_cfa_bayer_gbrb_bilinear(out)
+    return out.astype(np.float32)
 
 # === Usage ===
 if __name__ == "__main__":
-    width, height = 1920, 1200
+    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Camera visualizer with optional window resize.")
+    parser.add_argument('--width', '-W', type=int, default=640,
+                        help='Window width')
+    parser.add_argument('--height', '-H', type=int, default=480,
+                        help='Window height')
+    args = parser.parse_args()
+
+    width, height = args.width, args.height
     bayer = capture_bayer_image_in_memory("/dev/video2", width, height, pixfmt="GB16")
+    # bayer = (np.random.randn(width, height) * 65535).astype(np.uint16)
     rgb = bayer_to_rgb(bayer, demosaic=True)
     print(f"Bayer shape: {bayer.shape}")
     print(f"Bayer dtype: {bayer.dtype}")
