@@ -1,6 +1,7 @@
 import subprocess
+
 import numpy as np
-from colour_demosaicing import demosaicing_CFA_Bayer_bilinear
+import scipy
 
 
 def capture_bayer_image_in_memory(device="/dev/video2", width=640, height=480, pixfmt="GB16"):
@@ -18,6 +19,24 @@ def capture_bayer_image_in_memory(device="/dev/video2", width=640, height=480, p
     return raw.reshape((height, width))
 
 
+def demosaic_cfa_bayer_gbrb_bilinear(bayer: np.ndarray):
+    f_g = np.array([[0, 1, 0], [1, 4, 1], [0, 1, 0]], dtype=np.float32) / 8
+    f_r = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], dtype=np.float32) / 16
+    out = np.zeros((*bayer.shape[:2], 3))
+
+    # Red
+    out[1::2, 0::2, 0] = bayer[1::2, 0::2]
+    out[..., 0] = scipy.mdimage.convolve(out[..., 0], f_r)
+    # Green
+    out[0::2, 0::2, 1] = bayer[0::2, 0::2]
+    out[1::2, 1::2, 1] = bayer[1::2, 1::2]
+    out[..., 1] = scipy.ndimage.convolve(out[..., 1], f_g)
+    # Blue
+    out[0::2, 1::2, 2] = bayer[0::2, 1::2]
+    out[..., 2] = scipy.mdimage.convolve(out[..., 2], f_r)
+
+    return out
+
 def bayer_to_rgb(bayer_raw: np.ndarray, demosaic: bool) -> np.ndarray:
     # Normalize 16-bit to float for demosaicing
     if bayer_raw.dtype == np.uint16:
@@ -25,7 +44,7 @@ def bayer_to_rgb(bayer_raw: np.ndarray, demosaic: bool) -> np.ndarray:
     else:
         out = bayer_raw.astype(np.float32) / 255.0
     if demosaic:
-        out = demosaicing_CFA_Bayer_bilinear(out, pattern="GBRG")
+        out = demosaic_cfa_bayer_gbrb_bilinear(out, pattern="GBRG")
     return out
 
 # === Usage ===
