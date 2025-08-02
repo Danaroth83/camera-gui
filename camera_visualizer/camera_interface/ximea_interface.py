@@ -247,8 +247,8 @@ class XimeaCamera(Camera):
     def exposure(self) -> int:
         return int(self.state.current_exposure)
 
-    def exposure_range(self) -> tuple[int, int]:
-        return XIMEA_MIN_EXPOSURE, XIMEA_MAX_EXPOSURE
+    def exposure_range(self) -> tuple[int, int, int]:
+        return XIMEA_MIN_EXPOSURE, XIMEA_MAX_EXPOSURE, XIMEA_EXPOSURE_INCREMENT
 
     def set_exposure(self, exposure: int) -> bool:
         if abs(self.state.current_exposure - exposure) <= XIMEA_EXPOSURE_INCREMENT:

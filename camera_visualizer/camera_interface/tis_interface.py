@@ -239,8 +239,12 @@ class TisCamera(Camera):
     def exposure(self) -> float:
         return self.state.current_exposure * 1000
 
-    def exposure_range(self) -> tuple[int, int]:
-        return TIS_MIN_EXPOSURE_MS * 1000, TIS_MAX_EXPOSURE_MS * 1000
+    def exposure_range(self) -> tuple[int, int, int]:
+        return (
+            TIS_MIN_EXPOSURE_MS * 1000,
+            TIS_MAX_EXPOSURE_MS * 1000,
+            TIS_EXPOSURE_INCREMENT * 1000,
+        )
 
     def set_exposure(self, exposure: int) -> bool:
         self.grabber.device_property_map.set_value(

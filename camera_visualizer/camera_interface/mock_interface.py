@@ -14,70 +14,124 @@ class Camera(ABC):
 
     @abstractmethod
     def open(self) -> None:
+        """
+        Instructions to open the device and start the stream.
+        """
         ...
 
     @abstractmethod
     def close(self) -> None:
+        """
+        Instructions to end the stream and close the camera
+        """
         ...
 
     @abstractmethod
     def toggle_bit_depth(self) -> None:
+        """
+        Change the camera status to a different bit depth
+        """
         ...
 
     @abstractmethod
     def bit_depth(self) -> int:
+        """
+        Retrieve the current bit depth
+        """
         ...
 
     @abstractmethod
     def get_frame(self, fps: float) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Returns a tuple of raw frame and frame for visualization as NumPy
+        arrays. The second output is expected to be a float32 between 0 and 1.
+        """
         ...
 
     @abstractmethod
     def shape(self) -> tuple[int, int]:
+        """
+        Gets the shape of the image.
+        """
         ...
 
     @abstractmethod
     def exposure(self) -> int:
+        """
+        Gets the current exposure level in microseconds.
+        """
         ...
 
-    @staticmethod
-    def exposure_range(self) -> tuple[int, int]:
+    @abstractmethod
+    def exposure_range(self) -> tuple[int, int, int]:
+        """
+        Gets a tuple of minimum, maximum and allowed increase for the exposure
+        level in microseconds.
+        """
         ...
 
     @abstractmethod
     def set_exposure(self, exposure: int) -> bool:
+        """
+        Sets the exposure level (in microseconds).
+        """
         ...
 
     @abstractmethod
     def init_exposure(self, max_exposure: int) -> None:
+        """
+        Initialize the exposure level for the automatic exposure assessment.
+        """
         ...
 
     @abstractmethod
     def adjust_exposure(self) -> None:
+        """
+        Updates the exposure level during the automatic exposure assessment.
+        """
         ...
 
     @abstractmethod
     def check_exposure(self, frame: np.ndarray) -> bool:
+        """
+        Checks if the automatic exposure assessment has reached convergence.
+        """
         ...
 
     @abstractmethod
     def toggle_view(self) -> None:
+        """
+        FLips the state of the camera to allow for a different frame view.
+        """
         ...
 
     @abstractmethod
     def get_envi_options(self) -> None:
+        """
+        Gets the envi metadata for the savefile.
+        """
         ...
 
     @abstractmethod
     def set_save_subfolder(self, subfolder: str) -> None:
+        """
+        Sets the save subfolder
+        """
         ...
 
     @abstractmethod
     def save_folder(self) -> Path:
+        """
+        Returns the save path folder for saving data.
+        """
         ...
 
     @abstractmethod
     def exception_type(self) -> Type[Exception]:
+        """
+        Returns the camera specific exception type.
+        """
+
         ...
 
     def save_frame(
@@ -86,6 +140,9 @@ class Camera(ABC):
         filename_stem: str,
         fmt: SaveFormatEnum
     ) -> None:
+        """
+        Saves the current frame.
+        """
         save_frame(
             frame=frame,
             save_folder=self.save_folder(),
@@ -131,8 +188,8 @@ class MockCamera(Camera):
     def exposure(self):
         return self._exposure
 
-    def exposure_range(self) -> tuple[int, int]:
-        return 100, 500_000
+    def exposure_range(self) -> tuple[int, int, int]:
+        return 100, 500_000, 20
 
     def set_exposure(self, exposure: int) -> bool:
         if exposure >= self._exposure_max or exposure <= self._exposure_min:
