@@ -51,7 +51,7 @@ PIXEL_FORMAT_TO_ENVI_FORMAT = {
 
 
 @dataclass
-class TisCameraState:
+class Ic4CameraState:
     save_folder: Path
     current_exposure: float = TIS_DEFAULT_EXPOSURE_TIME_MS
     timeout_ms: int = TIS_TIMEOUT_MS
@@ -79,7 +79,7 @@ class TisCameraState:
         return 2 ** self.bit_depth() - 1
 
 
-def get_envi_header(state: TisCameraState) -> dict:
+def get_envi_header(state: Ic4CameraState) -> dict:
     wl = [  # GB (Green-Blue) config
         [550, 450],
         [650, 550],
@@ -118,19 +118,19 @@ def get_envi_header(state: TisCameraState) -> dict:
     }
 
 
-class TisCamera(Camera):
+class Ic4Camera(Camera):
     grabber: ic4.Grabber
     sink: ic4.SnapSink | None
-    state: TisCameraState
+    state: Ic4CameraState
 
     def __init__(self):
         self.grabber = ic4.Grabber(dev=None)
         self.sink = None
-        data_path = data_path()
+        data_path = load_data_path()
         data_path.mkdir(parents=False, exist_ok=True)
         data_path = data_path / "tis"
         data_path.mkdir(parents=False, exist_ok=True)
-        state = TisCameraState(
+        state = Ic4CameraState(
             save_folder=data_path,
             current_exposure=TIS_DEFAULT_EXPOSURE_TIME_MS,
             pixel_format=TIS_DEFAULT_PIXEL_FORMAT,
@@ -262,13 +262,13 @@ class TisCamera(Camera):
 
 
 def main():
-    cam = TisCamera()
+    cam = Ic4Camera()
 
     cam.open()
 
     # cam.grabber.device_property_map.set_value(property_name=ic4.PropId.PIXEL_FORMAT, value=ic4.PixelFormat.BayerGB16)
 
-    frame, frame_view = cam.get_frame(fps=10000)
+    frame, frame_view = cam.get_frame(fps=30)
     print(f"pixel format: {cam.sink.output_image_type.pixel_format.name}")
     print(f"frame type: {frame.dtype}, max: {frame.max()}")
     print(f"frame_view type: {frame_view.dtype}, max: {frame_view.max()}")

@@ -1,6 +1,6 @@
 import imagingcontrol4 as ic4
 
-from camera_visualizer.camera_interface.tis_interface import TisCamera, TisCameraState
+from camera_visualizer.camera_interface.ic4_interface import Ic4Camera, Ic4CameraState
 
 TIS_EXPOSURE_TIMES = [
     ic4.PropId.EXPOSURE_AUTO,
@@ -26,7 +26,7 @@ def print_exposure_time(grabber: ic4.Grabber, exp_time_property: str):
 
 
 def main():
-    cam = TisCamera()
+    cam = Ic4Camera()
     cam.open()
     print(f"Cam State ExpTime Before set_exposure: {cam.state.current_exposure}")
     for exp_time_property in TIS_EXPOSURE_TIMES:

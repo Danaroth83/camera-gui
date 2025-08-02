@@ -198,6 +198,7 @@ class MockCamera(Camera):
 class CameraEnum(str, Enum):
     MOCK = "mock"
     XIMEA = "ximea"
+    IC4 = "ic4"
     TIS = "tis"
 
 
@@ -208,8 +209,8 @@ def camera(camera_id: CameraEnum | str) -> Camera:
     elif camera_id == CameraEnum.XIMEA:
         from camera_visualizer.camera_interface.ximea_interface import XimeaCamera
         return XimeaCamera()
-    elif camera_id == CameraEnum.TIS:
-        from camera_visualizer.camera_interface.tis_interface import TisCamera
-        return TisCamera()
+    elif camera_id == CameraEnum.IC4:
+        from camera_visualizer.camera_interface.ic4_interface import Ic4Camera
+        return Ic4Camera()
     else:
         raise ValueError(f"Camera f{camera_id} not known.")
