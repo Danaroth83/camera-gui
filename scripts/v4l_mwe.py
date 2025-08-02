@@ -53,9 +53,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser(
         description="Camera visualizer with optional window resize.")
-    parser.add_argument('--width', '-W', type=int, default=640,
+    parser.add_argument('--width', '-W', type=int, default=1920,
                         help='Window width')
-    parser.add_argument('--height', '-H', type=int, default=480,
+    parser.add_argument('--height', '-H', type=int, default=1200,
                         help='Window height')
     args = parser.parse_args()
 
