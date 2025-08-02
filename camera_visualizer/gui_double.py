@@ -37,7 +37,7 @@ def main():
         raise e
     try:
         from camera_visualizer.camera_interface.tis_interface import TisCamera
-        camera_b = CameraEnum.IC4
+        camera_b = CameraEnum.TIS
     except ImportError:
         camera_b = CameraEnum.MOCK
     except Exception as e:
