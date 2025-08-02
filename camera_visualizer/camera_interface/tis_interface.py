@@ -5,6 +5,7 @@ from typing import Type
 
 import imagingcontrol4 as ic4
 import numpy as np
+import scipy
 
 from camera_visualizer.camera_interface.mock_interface import Camera
 from camera_visualizer.paths import load_data_path
@@ -49,9 +50,27 @@ PIXEL_FORMAT_TO_ENVI_FORMAT = {
     ic4.PixelFormat.BayerGB16: 12,
 }
 
+def demosaic_cfa_bayer_gbrb_bilinear(bayer: np.ndarray):
+    f_g = np.array([[0, 1, 0], [1, 4, 1], [0, 1, 0]], dtype=np.float32) / 8
+    f_r = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], dtype=np.float32) / 16
+    out = np.zeros((*bayer.shape[:2], 3))
+
+    # Red
+    out[1::2, 0::2, 0] = bayer[1::2, 0::2]
+    out[..., 0] = scipy.ndimage.convolve(out[..., 0], f_r)
+    # Green
+    out[0::2, 0::2, 1] = bayer[0::2, 0::2]
+    out[1::2, 1::2, 1] = bayer[1::2, 1::2]
+    out[..., 1] = scipy.ndimage.convolve(out[..., 1], f_g)
+    # Blue
+    out[0::2, 1::2, 2] = bayer[0::2, 1::2]
+    out[..., 2] = scipy.ndimage.convolve(out[..., 2], f_r)
+
+    return out
+
 
 @dataclass
-class Ic4CameraState:
+class TisCameraState:
     save_folder: Path
     current_exposure: float = TIS_DEFAULT_EXPOSURE_TIME_MS
     timeout_ms: int = TIS_TIMEOUT_MS
@@ -79,7 +98,7 @@ class Ic4CameraState:
         return 2 ** self.bit_depth() - 1
 
 
-def get_envi_header(state: Ic4CameraState) -> dict:
+def get_envi_header(state: TisCameraState) -> dict:
     wl = [  # GB (Green-Blue) config
         [550, 450],
         [650, 550],
@@ -118,10 +137,10 @@ def get_envi_header(state: Ic4CameraState) -> dict:
     }
 
 
-class Ic4Camera(Camera):
+class TisCamera(Camera):
     grabber: ic4.Grabber
     sink: ic4.SnapSink | None
-    state: Ic4CameraState
+    state: TisCameraState
 
     def __init__(self):
         self.grabber = ic4.Grabber(dev=None)
@@ -130,7 +149,7 @@ class Ic4Camera(Camera):
         data_path.mkdir(parents=False, exist_ok=True)
         data_path = data_path / "tis"
         data_path.mkdir(parents=False, exist_ok=True)
-        state = Ic4CameraState(
+        state = TisCameraState(
             save_folder=data_path,
             current_exposure=TIS_DEFAULT_EXPOSURE_TIME_MS,
             pixel_format=TIS_DEFAULT_PIXEL_FORMAT,
@@ -168,11 +187,14 @@ class Ic4Camera(Camera):
         pass
 
     def _get_frame_view(
-            self,
-            frame: np.ndarray,
+        self,
+        frame: np.ndarray,
+        demosaic: bool,
     ) -> np.ndarray:
         frame_normalized = frame.astype(np.float32) / self.state.dynamic_range()
         frame_view = np.mean(frame_normalized, axis=-1)
+        if demosaic:
+            frame_view = demosaic_cfa_bayer_gbrb_bilinear(frame_view)
         return frame_view
 
     def get_frame(self, fps: float) -> tuple[np.ndarray, np.ndarray]:
@@ -183,6 +205,7 @@ class Ic4Camera(Camera):
         frame = image_buffer.numpy_wrap()
         frame_view = self._get_frame_view(
             frame=frame,
+            demosaic=self.state.demosaic,
         )
         return frame, frame_view
 
@@ -200,7 +223,7 @@ class Ic4Camera(Camera):
         return ic4.IC4Exception
 
     def exposure(self) -> float:
-        return self.state.current_exposure
+        return self.state.current_exposure * 1000
 
     def exposure_range(self) -> tuple[int, int]:
         return TIS_MIN_EXPOSURE_MS * 1000, TIS_MAX_EXPOSURE_MS * 1000
@@ -262,7 +285,7 @@ class Ic4Camera(Camera):
 
 
 def main():
-    cam = Ic4Camera()
+    cam = TisCamera()
 
     cam.open()
 

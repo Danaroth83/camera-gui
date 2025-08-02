@@ -4,7 +4,6 @@ from pathlib import Path
 from enum import Enum
 
 import numpy as np
-from gi.repository import Gst
 
 from camera_visualizer.camera_interface.mock_interface import Camera
 

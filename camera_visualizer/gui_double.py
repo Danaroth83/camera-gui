@@ -36,7 +36,7 @@ def main():
     except Exception as e:
         raise e
     try:
-        from camera_visualizer.camera_interface.ic4_interface import Ic4Camera
+        from camera_visualizer.camera_interface.tis_interface import TisCamera
         camera_b = CameraEnum.IC4
     except ImportError:
         camera_b = CameraEnum.MOCK
