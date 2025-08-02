@@ -13,8 +13,10 @@ from camera_visualizer.paths import load_data_path
 ic4.Library.init()
 
 # Camera Constants
-TIS_HEIGHT = 1200
-TIS_WIDTH = 1920
+# TIS_HEIGHT = 1200
+# TIS_WIDTH = 1920
+TIS_HEIGHT = 480
+TIS_WIDTH = 640
 TIS_MIN_EXPOSURE_MS = 15
 TIS_MAX_EXPOSURE_MS = 33_333
 TIS_TIMEOUT_MS = 10_000
