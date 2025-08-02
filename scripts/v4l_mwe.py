@@ -10,6 +10,7 @@ def capture_bayer_image_in_memory(device="/dev/video2", width=640, height=480, p
     cmd = [
         "v4l2-ctl",
         f"--device={device}",
+        "--set-parm=5",
         f"--set-fmt-video=width={width},height={height},pixelformat={pixfmt}",
         "--stream-mmap",
         "--stream-count=1",
