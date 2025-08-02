@@ -19,9 +19,9 @@ def main():
     for device in monitor.get_devices():
         struc = device.get_properties()
 
-        print(f"model: {struc.get_string("model")}")
-        print(f"serial: {struc.get_string("serial")}")
-        print(f"type: {struc.get_string("type")}")
+        print(f"model: {struc.get_string('model')}")
+        print(f"serial: {struc.get_string('serial')}")
+        print(f"type: {struc.get_string('type')}")
 
 if __name__ == "__main__":
     main()
