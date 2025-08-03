@@ -105,7 +105,7 @@ class V4l2Camera(Camera):
         cmd = [
             "v4l2-ctl",
             f"--device={self.device}",
-            f"--set-fmt-video=width={self.width},height={self.height},pixelformat={self.pixfmt[0]}",
+            f"--set-fmt-video=width={self.width},height={self.height},pixelformat={self.pixel_formats[0]}",
             "--stream-mmap",
             "--stream-count=1",
             "--stream-to=-"  # <-- stdout

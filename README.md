@@ -271,7 +271,6 @@ ic4.DeviceEnum.devices()
 ```
 
 
-
 ## Plate designs
 
 The repository also contains some 3d designs for a plate to mount a camera

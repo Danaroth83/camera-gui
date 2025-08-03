@@ -32,6 +32,7 @@ class GuiState:
     selected_camera: CameraEnum = CameraEnum.MOCK
     fps: float = 30
     frame_counter: int = 0
+    dropped_frames: int = 0
     recording: bool = False
     running: bool = False
     paused: bool = False
@@ -121,7 +122,6 @@ class VideoPlayer(QWidget):
         self.exposure_button = QPushButton("Estimate Exposure Time")
         self.exposure_button.clicked.connect(self.estimate_exposure)
 
-
         layout_exposure = QHBoxLayout()
         layout_exposure.addWidget(self.exposure_slider)
         layout_exposure.addWidget(self.exposure_input)
@@ -129,12 +129,22 @@ class VideoPlayer(QWidget):
 
         self.filename_input = QLineEdit(self.state.filename_stem)
 
-
-        self.record_button = QPushButton("Record")
-        self.record_button.clicked.connect(self.toggle_recording)
         self.recording_label = QLabel("")
         self.recording_label.setStyleSheet("color: red; font-weight: bold")
         self.recording_label.setFixedHeight(30)
+        self.open_label = QLabel("")
+        self.open_label.setStyleSheet("color: red; font-weight: bold")
+        self.open_label.setFixedHeight(30)
+        self.frame_label = QLabel("")
+        self.frame_label.setStyleSheet("color: red; font-weight: bold")
+        self.frame_label.setFixedHeight(30)
+        warning_layout = QHBoxLayout()
+        warning_layout.addWidget(self.recording_label)
+        warning_layout.addWidget(self.open_label)
+        warning_layout.addWidget(self.frame_label)
+
+        self.record_button = QPushButton("Record")
+        self.record_button.clicked.connect(self.toggle_recording)
 
         self.record_format = QComboBox()
         self.record_format.addItems([e.value for e in SaveFormatEnum])
@@ -159,7 +169,7 @@ class VideoPlayer(QWidget):
         layout.addWidget(self.label)
         layout.addLayout(play_layout)
         layout.addLayout(view_layout)
-        layout.addWidget(self.recording_label)
+        layout.addLayout(warning_layout)
         layout.addLayout(record_layout)
         layout.addLayout(control_layout)
         layout.addStretch()
@@ -170,37 +180,56 @@ class VideoPlayer(QWidget):
         self.timer.start(int(1000 // self.state.fps))
 
     def toggle_running(self) -> None:
-        if not self.state.running:
-            try:
-                self.camera = camera(camera_id=self.state.selected_camera)
-                self.camera.open()
-            except self.camera.exception_type() as e:
-                print(e)
-                return
-            self.fps_input.setEnabled(False)
-            self.fps_slider.setEnabled(False)
-            self.camera_select.setEnabled(False)
-            self.exposure_input.setEnabled(True)
-            self.exposure_slider.setEnabled(True)
-            exposure = self.camera.exposure()
-            self.exposure_input.setText(f"{exposure:d}")
-            self.setup_exposure_slider(exposure_val=exposure)
-        else:
-            self.fps_input.setEnabled(True)
-            self.fps_slider.setEnabled(True)
-            self.camera_select.setEnabled(True)
-            self.exposure_input.setEnabled(False)
-            self.camera.close()
-        self.state.paused = False
-        self.pause_button.setText("Pause")
-        self.state.running = not self.state.running
-        self.play_button.setText("Stop" if self.state.running else "Play")
-        
-    def toggle_pausing(self) -> None:
+        self.disable_running() if self.state.running else self.enable_running()
+
+    def enable_running(self):
+        if self.state.running:
+            return
+        try:
+            self.camera = camera(camera_id=self.state.selected_camera)
+            self.camera.open()
+            self.open_label.setText("")
+        except (self.camera.exception_type(), ModuleNotFoundError) as e:
+            print(e)
+            self.open_label.setText("Device unavailable.")
+            return
+        self.fps_input.setEnabled(False)
+        self.fps_slider.setEnabled(False)
+        self.camera_select.setEnabled(False)
+        self.exposure_input.setEnabled(True)
+        self.exposure_slider.setEnabled(True)
+        exposure = self.camera.exposure()
+        self.exposure_input.setText(f"{exposure:d}")
+        self.setup_exposure_slider(exposure_val=exposure)
+        self.disable_pausing()
+        self.state.running = True
+        self.play_button.setText("Stop")
+
+    def disable_running(self):
         if not self.state.running:
             return
-        self.state.paused = not self.state.paused
-        self.pause_button.setText("Pause" if not self.state.paused else "Resume")
+        self.fps_input.setEnabled(True)
+        self.fps_slider.setEnabled(True)
+        self.camera_select.setEnabled(True)
+        self.exposure_input.setEnabled(False)
+        self.exposure_slider.setEnabled(False)
+        self.camera.close()
+        self.disable_pausing()
+        self.state.running = False
+        self.play_button.setText("Play")
+
+    def toggle_pausing(self) -> None:
+        self.disable_pausing() if self.state.paused else self.enable_pausing()
+
+    def enable_pausing(self) -> None:
+        if not self.state.running:
+            return
+        self.state.paused = True
+        self.pause_button.setText("Resume")
+
+    def disable_pausing(self) -> None:
+        self.state.paused = False
+        self.pause_button.setText("Pause")
 
     def toggle_view(self) -> None:
         if (not self.state.running) or self.state.paused:
@@ -284,8 +313,15 @@ class VideoPlayer(QWidget):
             self.update_exposure(exposure_val=exposure)
         try:
             frame_save, frame_view = self.camera.get_frame(fps=self.state.fps)
+            self.state.dropped_frames = 0
+            self.frame_label.setText("")
         except self.camera.exception_type():
             frame_save, frame_view = None, None
+            self.state.dropped_frames += 1
+            date = datetime.now().isoformat()
+            self.frame_label.setText(f"[{date}]: Dropped frame")
+        if self.state.dropped_frames >= 3:
+            self.disable_running()
         if frame_view is not None:
             self.current_image = self.numpy_to_pixmap_format(arr=frame_view)
             pixmap = QPixmap.fromImage(self.current_image)
@@ -299,8 +335,7 @@ class VideoPlayer(QWidget):
                 frame=frame_save,
                 fmt=self.state.recording_format,
             )
-            self.state.frame_counter += 1
-        if self.state.estimating_exposure:
+        if self.state.estimating_exposure and frame_save is not None:
             converged = self.camera.check_exposure(frame=frame_save)
             self.state.estimating_exposure = not converged
             self.state.exposure_tries += 1
