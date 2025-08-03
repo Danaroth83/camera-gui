@@ -1,30 +1,32 @@
 # Introduction
 
-This code was originally produced for a user-friendly Python interface
-for the visualization of cameras through a device independent API.
+This repository provides a **PyQt5-based graphical interface** for 
+visualizing and controlling **industrial cameras** through a device-independent 
+API. It is designed to be **user-friendly, flexible**, and adaptable to a 
+range of camera models and acquisition scenarios.
 
-The code provides a graphical interface in PyQt5 which allows to:
-- visualize the data stream;
-- pause resume the acquisition;
-- switch between different image views (e.g. mosaiced/demosaiced)
-- change the bit depth;
-- record a sequence of frames;
-- change the FPS;
-- set and dynamically assess the exposure time.
+## Key Features
+- Live **data stream visualization**
+- **Pause/resume** image acquisition
+- Switch between **mosaiced and demosaiced** image views
+- Support for **bit-depth switching**
+- **Frame sequence recording** in ENVI and NumPy formats
+- Adjustment of **frames per second (FPS)**
+- **Exposure time control** with live feedback
 
+## Supported Cameras
+This interface was originally developed to work with the following models:
+- **XIMEA MQ02HG-IM-SM4x4-REDNIR**
+  A hyperspectral camera using a 4×4 color filter array in the RED/NIR range.
+- **The Imaging Source DFK 23UX236**
+  A compact RGB camera featuring a Bayer color filter array.
 
-This code was originally developed for interfacing with:
-- the XIMEA camera model MQ02HG-IM-SM4x4-REDNIR.
-  - A hyperspectral mosaic based camera with a 4x4 color filter array pattern
-    operating in the RED/NIR range
-- the Imaging Source camera model DFK 23UX236 
-  - A compact RGB camera with a Bayer patterned color filter array.
-
-In the acquisition campaign performed in Japan in the July/August 2025 period,
-the cameras were mounted on a robot model JetArm Track T1, and placed on a 
-tripod over its mechanical arm.  
-The 3d designs for accomodating for the cameras over the tripod are shared
-in the `data\plate_design` folder.
+## Deployment Context
+During an acquisition campaign in Japan (July–August 2025), these cameras were 
+mounted on a **JetArm Track T1** robotic system using a tripod affixed to the 
+mechanical arm.
+Custom 3D-printed plate designs used for mounting are available in the 
+`data/plate_design` directory.
 
 
 # Installation instruction

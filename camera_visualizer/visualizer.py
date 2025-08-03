@@ -40,7 +40,7 @@ def on_key(event, state: VisualizerState, camera: Camera):
         else:
             print("Stopped recording")
     if event.key == "e":
-        camera.init_exposure()
+        camera.init_exposure(max_exposure=int(1_000_000 // 30))
         state.estimating_exposure = True
 
 
@@ -49,6 +49,7 @@ def update(
     state: VisualizerState,
     camera: Camera,
     filename_stem: str,
+    fps: float,
     im: Any, 
 ):
     if state.bit_depth_selector:
@@ -59,7 +60,7 @@ def update(
         camera.adjust_exposure()
         print(f"Exposure set to {camera.exposure()} us")
 
-    frame_save, frame_view = camera.get_frame()
+    frame_save, frame_view = camera.get_frame(fps=fps)
 
     if not state.paused:
         im.set_data(frame_view)
@@ -77,6 +78,7 @@ def update(
 
 def main_run(
     exposure: int = 10_000,
+    fps: float = 30,
     filename_stem: str = "frame",    
 ):
     try:
@@ -87,9 +89,10 @@ def main_run(
     except Exception as e:
         raise e
 
-    camera.open(exposure=exposure)
+    camera.open()
+    camera.set_exposure(exposure=exposure)
     camera.toggle_bit_depth()
-    frame, frame_normalized = camera.get_frame()
+    frame, frame_normalized = camera.get_frame(fps=fps)
     fig, ax = plt.subplots()
     ax.set_title(
         "P to pause/unpause, R to start/stop recording, M to switch view,\n"+
@@ -99,11 +102,11 @@ def main_run(
 
     state = VisualizerState()
 
-    update_fn = partial(update, state=state, camera=camera, filename_stem=filename_stem, im=im)
+    update_fn = partial(update, state=state, camera=camera, filename_stem=filename_stem, fps=fps, im=im)
     ani = FuncAnimation(
         fig,
         update_fn,
-        interval=30,
+        interval=fps,
         blit=True,
         cache_frame_data=False,
     )
