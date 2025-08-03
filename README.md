@@ -108,7 +108,7 @@ please consult:
 ### Programming a new camera
 
 To interface a new camera to the GUI:
-- define a class that follows the signature defined by the `Camera` 
+- Define a class that follows the signature defined by the `Camera` 
   abstract class.
 - Add a new enum to `CameraEnum`
 - Instantiate the newly defined camera class through the `camera` function.
@@ -141,6 +141,6 @@ Work mail: [daniele.picone@grenoble-inp.fr](mailto:daniele.picone@grenoble-inp.f
 Personal mail: [danaroth83@gmail.com](mailto:danaroth83@gmail.com)  
 
 Mohamad Jouni  
-Florais - Filiale UGA, CNRS, Grenoble INP, GIPSA-lab, 38000 Grenoble, France  
+Floralis - Filiale UGA, CNRS, Grenoble INP, GIPSA-lab, 38000 Grenoble, France  
 Work mail: [mohamad.jouni@grenoble-inp.fr](mailto:mohamad.jouni@grenoble-inp.fr)  
 Personal mail: [mhmd.jouni@outlook.fr](mailto:mhmd.jouni@outlook.fr)  
