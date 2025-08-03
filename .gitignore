@@ -12,3 +12,7 @@ data/*
 !data/.gitkeep
 !data/plate_design
 !data/plate_design/**
+!data/docs
+!data/docs/**
+!data/assets
+!data/assets/**

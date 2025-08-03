@@ -2,8 +2,8 @@
 
 This repository provides a **PyQt5-based graphical interface** for 
 visualizing and controlling **industrial cameras** through a device-independent 
-API. It is designed to be **user-friendly, flexible**, and adaptable to a 
-range of camera models and acquisition scenarios.
+API. It is designed to be **user-friendly, minimal, flexible**, and adaptable 
+to a range of camera models and acquisition scenarios.
 
 ## Key Features
 - Live **data stream visualization**
@@ -16,9 +16,9 @@ range of camera models and acquisition scenarios.
 
 ## Supported Cameras
 This interface was originally developed to work with the following models:
-- **XIMEA MQ02HG-IM-SM4x4-REDNIR**
+- **XIMEA MQ02HG-IM-SM4x4-REDNIR**  
   A hyperspectral camera using a 4×4 color filter array in the RED/NIR range.
-- **The Imaging Source DFK 23UX236**
+- **The Imaging Source DFK 23UX236**  
   A compact RGB camera featuring a Bayer color filter array.
 
 ## Deployment Context
@@ -75,9 +75,9 @@ To start a camera acquisition:
 
 - Select the proper FPS (Note: the camera may change the value internally).
 - Select the camera model:
-  - `mock` is a fake camera just to test the graphic interface;
-  - `ximea` is the XIMEA camera model MQ02HG-IM-SM4x4-REDNIR;
-  - `tis` is the Imaging Source camera model DFK 23UX236.
+  - `mock`: fake camera to test the graphic interface;
+  - `ximea`: the XIMEA camera model MQ02HG-IM-SM4x4-REDNIR;
+  - `tis`: the Imaging Source camera model DFK 23UX236.
   Note: Even if no camera API is installed, the `mock` camera will showcase
   the functionalities of the GUI.
 - Press the `Start` button.
@@ -97,180 +97,21 @@ sequential index.
 
 To exit, just close the visualization applet.
 
+## Camera API
 
-## XIMEA API installation
+For detailed instructions to install the API/SDK of the supported cameras, 
+please consult:
 
-### Prerequisites
+- [XIMEA MQ02HG-IM-SM4x4-REDNIR](./data/docs/ximea.md)
+- [The Imaging Source DFK 23UX236](./data/docs/tis.md)
 
-For this tutorial, you require a Linux machine running on x86 with `root`
-privileges.
+### Programming a new camera
 
-Before installing, you may need to change the security level of your UEFI/BIOS.
-Restart your PC and go to the `UEFI/BIOS firmware` installation (typically by 
-pressing Esc, F2, or Del at restart).
-In the `UEFI` menu, choose `Secure Boot` and select `Disabled`.
-
-### Introduction
-
-This software instructions are intended for a Linux x86 machine user.  
-For Windows/MacOS, please consult the official guide for installing
-the XIMEA software package available at:  
-<https://www.ximea.com/support/wiki/apis/APIs>
-
-- Download the software package for Linux available at:  
-  <https://www.ximea.com/software-downloads>
-- Select: 
-  - `Linux x86 Software Package Beta` if you are on a x86 system 
-    (typical for laptops).
-  - `Linux ARM Software Package Beta` if you are on an ARM system
-    (e.g. a Jetson board).
-- Unzip it and then browse to the `package` subfolder, and then run:
-  - If your camera works through USB (that is the case for our camera)
-  ```bash
-  sudo ./install
-  ```
-  - If your camera is PCIE-based:
-  ```bash
-  sudo ./install -pcie
-  ```
-  
-- IMPORTANT NOTE FOR USB CAMERAS:
-  - The USB default transfer rate on LINUX is usually limited by default.
-    You should be able to change this option by accessing your root account
-    (`sudo -i`) and typing:
-    ```bash
-    sudo echo 0 > /sys/module/usbcore/parameters/usbfs_memory_mb
-    ```
-
-- Restart your PC.
-
-### Testing the connection
-
-You should first show if the camera is recognized by the USB port:
-```bash
-lsusb
-```
-and it should list your XIMEA camera in the list.
-
-Additionally, and more importantly, you should check if the messages
-are properly listened by your machine from the camera.
-```bash
-sudo dmesg | grep -i ximea
-```
-and see a message like this one:
-```
-[    0.826118] usb 4-1: Manufacturer: XIMEA
-```
-
-To test if the API has been installed then run (with Python installed on your machine):
-```bash
-python -c "import ximea; print(ximea.__version__)"
-```
-If this has not worked, please try:
-- Uninstalling your XIMEA software package
-  ```bash
-  sudo /opt/XIMEA/uninstall
-  ```
-- Try installing the software package again through a root account
-  ```bash
-  su -i
-  sudo ./install
-  ```
-
-### Testing the camera API
-
-The ximea API provides some simplified script to test the connection;
-it should look something like this:
-```python
-from ximea import xiapi
-
-cam = xiapi.Camera()
-cam.open_device()
-cam.set_exposure(10_000)
-img = xiapi.Image()
-
-
-cam.start_acquisition()
-cam.get_image(img)
-...
-cam.stop_acquisition()
-cam.close_device()
-
-```
-
-## TIS API installation
-
-### Introduction
-
-The camera The Imaging Source (TIS) model DFK 23UX236 reached end of life service.
-First, test if the camera is discoverable through USB3:
-```bash
-lsusb
-```
-and you should get a message such as:
-```
-Bus 004 Device 003: ID 199e:841a The Imaging Source Europe GmbH DFK 23UX236
-```
-
-The camera is non-Genicam (V4L2), so you need to go to this page:  
-<https://www.theimagingsource.com/en-us/support/download/ic4gentlprodv4l2-1.0.0.144/>
-and select:
-- the Linux-AMD driver (the most common in commercial laptops). 
-- the Linux-ARM driver (in case you are running it on an ARM device, e.g. a 
-  Jetson board).
-Once downloaded, install it (Note: the filename may be different for you):
-
-```bash
-sudo dpkg -i ic4-gentl-driver-v4l2_1.0.0.144_amd64.deb
-```
-
-You may optionally want to install `tiscamera`:
-```bash
-git clone https://github.com/TheImagingSource/tiscamera.git
-cd tiscamera
-sudo ./scripts/dependency-magager install
-mkdir build
-cd build
-sudo cmake ..
-sudo make -j2
-sudo cmake --install build
-```
-
-### Testing the camera connection
-
-You can test if the camera is recongized through V4L2 (Video for Linux 2)
-- Install the v4l2 utility:
-  ```bash
-  sudo apt-get install v4l-utils
-  ```
-- List existing devices:
-  ```bash
-  v4l2-ctl --list-devices
-  ```
-- List the available formats for a specific data flow:
-  ```bash
-  v4l2-ctl --device /dev/video0 --list-formats-ext
-  ```
-- Then run the selected format through `ffplay` (once you install `ffmpeg`):
-  ```bash
-  ffplay -i /dev/video0 -pixel_format y16 -video_size 640x480
-  ```
-- Be sure that the pixel format and video size are compatible with the request
-  for your camera.
-
-### Testing the camera API
-
-Then install the Imaging Control 4:
-```bash
-pip install imagingcontrol4
-```
-
-and test it with a sample Python code:
-```python
-import imagingcontrol4 as ic4
-ic4.Library.init()
-ic4.DeviceEnum.devices()
-```
+To interface a new camera to the GUI:
+- define a class that follows the signature defined by the `Camera` 
+  abstract class.
+- Add a new enum to `CameraEnum`
+- Instantiate the newly defined camera class through the `camera` function.
 
 
 ## Plate designs
