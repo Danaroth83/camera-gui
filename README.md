@@ -29,7 +29,7 @@ in the `data\plate_design` folder.
 
 # Installation instruction
 
-## Visualizer
+## GUI
 
 ### Prerequisites
 
@@ -48,7 +48,7 @@ For visualization, you may also need to install this library:
 sudo apt install libxcb-xinerama0
 ```
 
-### Testing the visualizer
+### Testing the GUI
 
 From this moment on you should be able to connect the camera through USB to
 your machine and type:
@@ -56,25 +56,30 @@ your machine and type:
 python camera_visualizer/gui.py
 ```
 
-You can also resolve the dependencies yourself and run the script directly without
+You can also run two camera feeds at the same time by running:
+```bash
+python camera_visualizer/gui_double.py
+```
+
+If the dependencies internally, you can run the script directly without
 installing the library by typing:
 ```bash
 python -m camera_visualizer.gui
 ```
 
-A GUI will allow to select the camera model:
-- `mock` is a fake camera just to test the graphic interface;
-- `ximea` is the XIMEA camera model MQ02HG-IM-SM4x4-REDNIR;
-- `tis` is the Imaging Source camera model DFK 23UX236.
-and press the `Start` button.
+### GUI instructions
 
-Even if no camera API is installed, the `mock` camera should showcare
+To start a camera acquisition:
 
+- Select the proper FPS (Note: the camera may change the value internally).
+- Select the camera model:
+  - `mock` is a fake camera just to test the graphic interface;
+  - `ximea` is the XIMEA camera model MQ02HG-IM-SM4x4-REDNIR;
+  - `tis` is the Imaging Source camera model DFK 23UX236.
+  Note: Even if no camera API is installed, the `mock` camera will showcase
+  the functionalities of the GUI.
+- Press the `Start` button.
 
-You can also run two camera feeds at the same time by running:
-```bash
-python camera_visualizer/gui_double.py
-```
 
 For setting the exposure time, either:
 - Click the button `Estimate exposure time`
@@ -85,30 +90,10 @@ For saving video frames:
 - Type the filename;
 - Press the `Record` button;
 - Press the `Stop recording` button to stop the recording. 
-Files will be saved in `data/[camera_name]/[timestamp]` and with a sequential index.
+Files will be saved in `data/[camera_name]/[filename]_[timestamp]` and with a 
+sequential index.
 
-where 10000 is the requested exposure time (10 seconds in this case).
-From the visualization applet, you can (while within the scope of the figure):
-- Press P to pause/unpause.
-- Press M to switch between mosaiced and demosaiced view and viceversa.
-- Press B to switch between 10 bits/8 bits acquisition
-- Press R to start/stop recording frames to data/[timestamp].
-  - Remember to press R again or the acquisitions will continue indefinitely.
-  - You can select the savefile name by running the script with the `-n` 
-    argument. E.g., to save as `dark` within the save folder:
-    ```bash
-    python ximea_visualizer/visualization.py -n dark
-    ```
-- Press E to estimate the exposure time via binary search
-  - Keep the camera still while estimating.
-  - This is an experimental feature, so it may fail.
-  - Press E again to restart the estimation in case of failure.
-  - You may want to rerun the script with the estimated exposure time, e.g. 
-    for 10000 microseconds:
-    ```bash
-    python ximea_visualizer/visualization.py -e 10000
-    ```
-- To exit, just close the visualization applet.
+To exit, just close the visualization applet.
 
 
 ## XIMEA API installation
@@ -119,7 +104,8 @@ For this tutorial, you require a Linux machine running on x86 with `root`
 privileges.
 
 Before installing, you may need to change the security level of your UEFI/BIOS.
-Restart your PC and go to the `UEFI/BIOS firmware` installation (typically by pressing Esc, F2, or Del at restart).
+Restart your PC and go to the `UEFI/BIOS firmware` installation (typically by 
+pressing Esc, F2, or Del at restart).
 In the `UEFI` menu, choose `Secure Boot` and select `Disabled`.
 
 ### Introduction
@@ -129,22 +115,32 @@ For Windows/MacOS, please consult the official guide for installing
 the XIMEA software package available at:  
 <https://www.ximea.com/support/wiki/apis/APIs>
 
-Download the software package for Linux available at:  
-<https://www.ximea.com/software-downloads>
+- Download the software package for Linux available at:  
+  <https://www.ximea.com/software-downloads>
+- Select: 
+  - `Linux x86 Software Package Beta` if you are on a x86 system 
+    (typical for laptops).
+  - `Linux ARM Software Package Beta` if you are on an ARM system
+    (e.g. a Jetson board).
+- Unzip it and then browse to the `package` subfolder, and then run:
+  - If your camera works through USB (that is the case for our camera)
+  ```bash
+  sudo ./install
+  ```
+  - If your camera is PCIE-based:
+  ```bash
+  sudo ./install -pcie
+  ```
+  
+- IMPORTANT NOTE FOR USB CAMERAS:
+  - The USB default transfer rate on LINUX is usually limited by default.
+    You should be able to change this option by accessing your root account
+    (`sudo -i`) and typing:
+    ```bash
+    sudo echo 0 > /sys/module/usbcore/parameters/usbfs_memory_mb
+    ```
 
-and select `Linux x86 Software Package Beta`.
-
-Unzip it and then browse to the `package` subfolder, and then run
-```bash
-sudo ./install -cam_usb30
-```
-if your camera is USB 3.0 based (this is the case for our camera), or
-```bash
-sudo ./install -pcie
-```
-if it is based on the PCIE protocol.
-
-Then, restart your PC.
+- Restart your PC.
 
 ### Testing the connection
 
@@ -200,14 +196,6 @@ cam.close_device()
 
 ```
 
-However, the USB default transfer rate on LINUX is usually limited by default.
-You should be able to change this option by accessing your root account
-and typing:
-
-```bash
-sudo echo 0 > /sys/module/usbcore/parameters/usbfs_memory_mb
-```
-
 ## TIS API installation
 
 ### Introduction
@@ -224,12 +212,49 @@ Bus 004 Device 003: ID 199e:841a The Imaging Source Europe GmbH DFK 23UX236
 
 The camera is non-Genicam (V4L2), so you need to go to this page:  
 <https://www.theimagingsource.com/en-us/support/download/ic4gentlprodv4l2-1.0.0.144/>
-and select the Linux-AMD driver. Once downloaded, install it through `dpkg`
-(Note: the filename may be different for you):
+and select:
+- the Linux-AMD driver (the most common in commercial laptops). 
+- the Linux-ARM driver (in case you are running it on an ARM device, e.g. a 
+  Jetson board).
+Once downloaded, install it (Note: the filename may be different for you):
 
 ```bash
 sudo dpkg -i ic4-gentl-driver-v4l2_1.0.0.144_amd64.deb
 ```
+
+You may optionally want to install `tiscamera`:
+```bash
+git clone https://github.com/TheImagingSource/tiscamera.git
+cd tiscamera
+sudo ./scripts/dependency-magager install
+mkdir build
+cd build
+sudo cmake ..
+sudo make -j2
+sudo cmake --install build
+```
+
+### Testing the camera connection
+
+You can test if the camera is recongized through V4L2 (Video for Linux 2)
+- Install the v4l2 utility:
+  ```bash
+  sudo apt-get install v4l-utils
+  ```
+- List existing devices:
+  ```bash
+  v4l2-ctl --list-devices
+  ```
+- List the available formats for a specific data flow:
+  ```bash
+  v4l2-ctl --device /dev/video0 --list-formats-ext
+  ```
+- Then run the selected format through `ffplay` (once you install `ffmpeg`):
+  ```bash
+  ffplay -i /dev/video0 -pixel_format y16 -video_size 640x480
+  ```
+- Be sure that the pixel format and video size are compatible with the request
+  for your camera.
 
 ### Testing the camera API
 
@@ -244,6 +269,8 @@ import imagingcontrol4 as ic4
 ic4.Library.init()
 ic4.DeviceEnum.devices()
 ```
+
+
 
 ## Plate designs
 
@@ -260,7 +287,7 @@ The folder contains:
 - An STL conversion for 3d printing: `scaled_holed_plate.stl`
 - The sliced version for the Flashforge 3d printer: `scaled_holed_plate.gx`
 
-The design `cameras_94mm_v2.pdf` was originally made by:
+The design `cameras_94mm_v2.pdf` designed by:
 - Kuniaki Uto [uto@wise-sss.titech.ac.jp](mailto:uto@wise-sss.titech.ac.jp)
 
 

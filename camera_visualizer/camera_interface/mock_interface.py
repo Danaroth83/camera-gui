@@ -85,9 +85,9 @@ class Camera(ABC):
         ...
 
     @abstractmethod
-    def adjust_exposure(self) -> None:
+    def adjust_exposure(self) -> int:
         """
-        Updates the exposure level during the automatic exposure assessment.
+        Return the exposure level during the automatic exposure assessment.
         """
         ...
 
@@ -201,8 +201,8 @@ class MockCamera(Camera):
         self._exposure_max = min(max_exposure, 500_000)
         self._exposure_min = 100
 
-    def adjust_exposure(self) -> None:
-        self._exposure = (self._exposure_min + self._exposure_max) // 2
+    def adjust_exposure(self) -> int:
+        return int((self._exposure_min + self._exposure_max) // 2)
 
     def check_exposure(self, frame: np.ndarray) -> bool:
         if self._exposure > 10000:

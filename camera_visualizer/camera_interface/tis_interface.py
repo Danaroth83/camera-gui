@@ -159,8 +159,13 @@ class TisCamera(Camera):
         self.state = state
 
     def open(self):
-        first_device_info = ic4.DeviceEnum.devices()[0]
-        self.grabber.device_open(dev=first_device_info)
+        device_info = ic4.DeviceEnum.devices()
+        if len(device_info) < 1:
+            raise self.exception_type()(
+                code=ic4.ErrorCode.DeviceNotFound,
+                message="No device found",
+            )
+        self.grabber.device_open(dev=device_info[0])
         self.grabber.device_property_map.set_value(
             property_name=ic4.PropId.PIXEL_FORMAT,
             value=TIS_DEFAULT_PIXEL_FORMAT,
@@ -233,7 +238,7 @@ class TisCamera(Camera):
     def save_folder(self) -> Path:
         return self.state.save_path
 
-    def exception_type(self) -> Type[Exception]:
+    def exception_type(self) -> Type[ic4.IC4Exception]:
         return ic4.IC4Exception
 
     def exposure(self) -> float:
@@ -288,11 +293,9 @@ class TisCamera(Camera):
         self.state.max_exposure = min(TIS_MAX_EXPOSURE_MS, int(max_exposure // 1000))
         self.state.min_exposure = TIS_MIN_EXPOSURE_MS
 
-    def adjust_exposure(self) -> None:
+    def adjust_exposure(self) -> int:
         """Adjust exposure at each iteration when applying automatic exposure search"""
-        self.set_exposure(
-            exposure=int((self.state.max_exposure + self.state.min_exposure) // 2),
-        )
+        return int((self.state.max_exposure + self.state.min_exposure) // 2)
 
     def check_exposure(self, frame: np.ndarray) -> bool:
         """Check convergence of automatic exposure"""

@@ -64,9 +64,29 @@ class VideoPlayer(QWidget):
         self.play_button.clicked.connect(self.toggle_running)
         self.pause_button = QPushButton("Pause")
         self.pause_button.clicked.connect(self.toggle_pausing)
+
+        self.camera_select = QComboBox()
+        self.camera_select.addItems([e.value for e in CameraEnum])
+        self.camera_select.currentIndexChanged.connect(self.choose_camera)
+        self.camera_select.setCurrentText(self.state.selected_camera)
+        self.camera_select.setEnabled(True)
+        camera_select = QFormLayout()
+        camera_select.addRow("Camera:", self.camera_select)
+
+        play_layout = QHBoxLayout()
+        play_layout.addWidget(self.play_button)
+        play_layout.addWidget(self.pause_button)
+        play_layout.addLayout(camera_select)
         
         self.view_button = QPushButton("Toggle view")
         self.view_button.clicked.connect(self.toggle_view)
+
+        self.bit_depth_button = QPushButton(f"Toggle bit depth: {self.camera.bit_depth()}")
+        self.bit_depth_button.clicked.connect(self.toggle_bit_depth)
+
+        view_layout = QHBoxLayout()
+        view_layout.addWidget(self.view_button)
+        view_layout.addWidget(self.bit_depth_button)
 
         # FPS and Exposure Inputs
         self.fps_input = QLineEdit(f"{self.state.fps}")
@@ -98,15 +118,19 @@ class VideoPlayer(QWidget):
         self.exposure_slider.valueChanged.connect(lambda value: self.exposure_input.setText(f"{value}"))
         self.exposure_slider.sliderReleased.connect(self.update_exposure_from_slider)
         self.exposure_slider.setEnabled(False)
+        self.exposure_button = QPushButton("Estimate Exposure Time")
+        self.exposure_button.clicked.connect(self.estimate_exposure)
+
 
         layout_exposure = QHBoxLayout()
         layout_exposure.addWidget(self.exposure_slider)
         layout_exposure.addWidget(self.exposure_input)
+        layout_exposure.addWidget(self.exposure_button)
 
         self.filename_input = QLineEdit(self.state.filename_stem)
 
 
-        self.record_button = QPushButton("Start Recording")
+        self.record_button = QPushButton("Record")
         self.record_button.clicked.connect(self.toggle_recording)
         self.recording_label = QLabel("")
         self.recording_label.setStyleSheet("color: red; font-weight: bold")
@@ -116,36 +140,27 @@ class VideoPlayer(QWidget):
         self.record_format.addItems([e.value for e in SaveFormatEnum])
         self.record_format.currentIndexChanged.connect(self.set_record_format)
         self.record_format.setCurrentText(self.state.recording_format)
+        record_format = QFormLayout()
+        record_format.addRow("Format:", self.record_format)
+        record_filename = QFormLayout()
+        record_filename.addRow("Filename:", self.filename_input)
 
-        self.camera_select = QComboBox()
-        self.camera_select.addItems([e.value for e in CameraEnum])
-        self.camera_select.currentIndexChanged.connect(self.choose_camera)
-        self.camera_select.setCurrentText(self.state.selected_camera)
-        self.camera_select.setEnabled(True)
-        
-        self.exposure_button = QPushButton("Estimate Exposure Time")
-        self.exposure_button.clicked.connect(self.toggle_exposure)
-        
-        self.bit_depth_button = QPushButton(f"Toggle bit depth: {self.camera.bit_depth()}")
-        self.bit_depth_button.clicked.connect(self.toggle_bit_depth)
+        record_layout = QHBoxLayout()
+        record_layout.addWidget(self.record_button)
+        record_layout.addLayout(record_format)
+        record_layout.addLayout(record_filename)
 
         # Layouts
         control_layout = QFormLayout()
         control_layout.addRow("FPS:", layout_fps)
         control_layout.addRow("Exposure (μs):", layout_exposure)
-        control_layout.addRow("Filename:", self.filename_input)
 
         layout = QVBoxLayout()
         layout.addWidget(self.label)
-        layout.addWidget(self.play_button)
-        layout.addWidget(self.pause_button)
-        layout.addWidget(self.camera_select)
-        layout.addWidget(self.view_button)
-        layout.addWidget(self.bit_depth_button)
-        layout.addWidget(self.exposure_button)
+        layout.addLayout(play_layout)
+        layout.addLayout(view_layout)
         layout.addWidget(self.recording_label)
-        layout.addWidget(self.record_button)
-        layout.addWidget(self.record_format)
+        layout.addLayout(record_layout)
         layout.addLayout(control_layout)
         layout.addStretch()
         self.setLayout(layout)
@@ -213,10 +228,10 @@ class VideoPlayer(QWidget):
         else:
             self.record_format.setEnabled(True)
             self.filename_input.setEnabled(True)
-            self.record_button.setText("Start Recording")
+            self.record_button.setText("Record")
             self.recording_label.setText("")
 
-    def toggle_exposure(self):
+    def estimate_exposure(self):
         if (not self.state.running) or self.state.paused or self.state.estimating_exposure:
             return
         self.state.estimating_exposure = True
@@ -265,10 +280,8 @@ class VideoPlayer(QWidget):
         if (not self.state.running) or self.state.paused:
             return
         if self.state.estimating_exposure:
-            self.camera.adjust_exposure()
-            exposure = self.camera.exposure()
-            self.exposure_input.setText(f"{exposure}")
-            self.exposure_slider.setValue(exposure)
+            exposure = self.camera.adjust_exposure()
+            self.update_exposure(exposure_val=exposure)
         try:
             frame_save, frame_view = self.camera.get_frame(fps=self.state.fps)
         except self.camera.exception_type():

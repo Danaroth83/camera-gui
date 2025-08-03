@@ -266,10 +266,8 @@ class XimeaCamera(Camera):
         self.state.max_exposure = min(XIMEA_MAX_EXPOSURE, max_exposure)
         self.state.min_exposure = XIMEA_MIN_EXPOSURE
 
-    def adjust_exposure(self) -> None:
-        self.set_exposure(
-            exposure=int((self.state.max_exposure + self.state.min_exposure) // 2),
-        )
+    def adjust_exposure(self) -> int:
+        return int((self.state.max_exposure + self.state.min_exposure) // 2)
 
     def check_exposure(self, frame: np.ndarray) -> bool:
         return find_exposure_for_saturation(
