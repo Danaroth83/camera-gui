@@ -15,6 +15,9 @@ XIMEA_MOSAIC_C = 4
 XIMEA_MIN_EXPOSURE = 7_000
 XIMEA_MAX_EXPOSURE = 499_950
 XIMEA_EXPOSURE_INCREMENT = 10
+XIMEA_FPS_MIN = 1
+XIMEA_FPS_MAX = 170
+XIMEA_FPS_INCREMENT = 1
 XIMEA_DYN_RANGE_10BIT = 1023
 XIMEA_DYN_RANGE_8BIT = 255
 XIMEA_HEIGHT = 2048
@@ -116,6 +119,7 @@ def get_envi_header(state: CameraState) -> dict:
         'weight': '32 g (without optics)',
 
         'acquisition time': datetime.now().isoformat(),
+        'exposure time (ms)': f"{state.current_exposure / 1000:.3f}",
         'description': 'Raw 4x4 mosaic snapshot. Each 4×4 tile encodes 16 spectral bands.',
         'filter array size': '4x4',
         'wavelength units': 'Nanometers',
@@ -249,6 +253,9 @@ class XimeaCamera(Camera):
 
     def exposure_range(self) -> tuple[int, int, int]:
         return XIMEA_MIN_EXPOSURE, XIMEA_MAX_EXPOSURE, XIMEA_EXPOSURE_INCREMENT
+
+    def fps_range(self) -> tuple[int, int, int]:
+        return XIMEA_FPS_MIN, XIMEA_FPS_MAX, XIMEA_FPS_INCREMENT
 
     def set_exposure(self, exposure: int) -> bool:
         if abs(self.state.current_exposure - exposure) <= XIMEA_EXPOSURE_INCREMENT:

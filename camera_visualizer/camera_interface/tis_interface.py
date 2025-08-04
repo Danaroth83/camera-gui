@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Type
+from enum import Enum
 
 import imagingcontrol4 as ic4
 import numpy as np
@@ -12,45 +13,53 @@ from camera_visualizer.paths import load_data_path
 
 ic4.Library.init()
 
+class TisShapeEnum(str, Enum):
+    LOW = "low"
+    HIGH = "high"
+
 # Camera Constants
-# TIS_HEIGHT = 1200
-# TIS_WIDTH = 1920
-TIS_HEIGHT = 480
-TIS_WIDTH = 640
 TIS_MIN_EXPOSURE_MS = 15
 TIS_MAX_EXPOSURE_MS = 33_333
-TIS_TIMEOUT_MS = 10_000
 TIS_EXPOSURE_INCREMENT = 10
-
+TIS_TIMEOUT_MS = 10_000
 
 # Default Camera States
 TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.BayerGB16
+TIS_DEFAULT_SHAPE = TisShapeEnum.LOW
 TIS_DEFAULT_EXPOSURE_TIME_MS = 500
 
-TIS_ACCEPTED_PIXEL_FORMATS = [
-    ic4.PixelFormat.Mono8,
-    ic4.PixelFormat.BayerGB8,
-    ic4.PixelFormat.BayerGB16,
+
+TIS_BIT_DEPTH_DICT = [
+    {
+        "format": ic4.PixelFormat.Mono8,
+        "bit_depth": 8,
+        "envi_format": 1
+    },
+    {
+        "format": ic4.PixelFormat.BayerGB8,
+        "bit_depth": 8,
+        "envi_format": 1
+    },
+    {
+        "format": ic4.PixelFormat.BayerGB16,
+        "bit_depth": 16,
+        "envi_format": 12
+    },
 ]
 
-# Camera Mappers
-PIXEL_FORMAT_TO_BIT_DEPTH_MAP = {
-    ic4.PixelFormat.Mono8: 8,
-    ic4.PixelFormat.BayerGB8: 8,
-    ic4.PixelFormat.BayerGB16: 16,
-}
+TIS_SHAPE_DICT = [
+    {
+        "type": TisShapeEnum.LOW,
+        "shape": (480, 640, 1),
+        "fps_range": (5, 30 , 5),
+    },
+    {
+        "type": TisShapeEnum.HIGH,
+        "shape": (1200, 1920, 1),
+        "fps_range": (5, 6, 1),
+    }
+]
 
-PIXEL_FORMAT_TO_SHAPE = {
-    ic4.PixelFormat.Mono8: (TIS_HEIGHT, TIS_WIDTH, 1),
-    ic4.PixelFormat.BayerGB8: (TIS_HEIGHT, TIS_WIDTH, 1),
-    ic4.PixelFormat.BayerGB16: (TIS_HEIGHT, TIS_WIDTH, 1),
-}
-
-PIXEL_FORMAT_TO_ENVI_FORMAT = {
-    ic4.PixelFormat.Mono8: 1,
-    ic4.PixelFormat.BayerGB8: 1,
-    ic4.PixelFormat.BayerGB16: 12,
-}
 
 def demosaic_cfa_bayer_gbrb_bilinear(bayer: np.ndarray):
     f_g = np.array([[0, 1, 0], [1, 4, 1], [0, 1, 0]], dtype=np.float32) / 8
@@ -74,6 +83,7 @@ def demosaic_cfa_bayer_gbrb_bilinear(bayer: np.ndarray):
 @dataclass
 class TisCameraState:
     save_folder: Path
+    shape_format: TisShapeEnum = TIS_DEFAULT_SHAPE
     current_exposure: float = TIS_DEFAULT_EXPOSURE_TIME_MS
     timeout_ms: int = TIS_TIMEOUT_MS
     pixel_format: ic4.PixelFormat = TIS_DEFAULT_PIXEL_FORMAT
@@ -90,11 +100,25 @@ class TisCameraState:
             return self.save_folder / self.save_subfolder
 
     def shape(self) -> tuple[int, ...]:
-        return PIXEL_FORMAT_TO_SHAPE[self.pixel_format]
+        return next((
+            entry["shape"] for entry in TIS_SHAPE_DICT
+            if entry["type"] == self.shape_format),
+            None,
+        )
 
     def bit_depth(self) -> int:
-        bit_depth = PIXEL_FORMAT_TO_BIT_DEPTH_MAP[self.pixel_format]
-        return bit_depth
+        return next((
+            entry["bit_depth"] for entry in TIS_BIT_DEPTH_DICT
+            if entry["format"] == self.pixel_format),
+            None,
+        )
+
+    def fps_range(self) -> tuple[int, int, int]:
+        return next((
+            entry["fps_range"] for entry in TIS_SHAPE_DICT
+            if entry["type"] == self.shape_format),
+            None,
+        )
 
     def dynamic_range(self) -> int:
         return 2 ** self.bit_depth() - 1
@@ -106,11 +130,15 @@ def get_envi_header(state: TisCameraState) -> dict:
         [650, 550],
     ]
     wl_flat = [w for wa in wl for w in wa]
-    envi_data_type = PIXEL_FORMAT_TO_ENVI_FORMAT[state.pixel_format]
+    envi_data_type = next((
+            entry["bit_depth"] for entry in TIS_BIT_DEPTH_DICT
+            if entry["envi_format"] == state.pixel_format),
+            None,
+        )
     bit_depth = f"{state.bit_depth()} bits"
     return {
-        'samples': TIS_WIDTH,  # width in pixels
-        'lines': TIS_HEIGHT,  # height in pixels
+        'samples': state.shape()[1],  # width in pixels
+        'lines': state.shape()[0],  # height in pixels
         'bands': 1,  # raw mosaic has one band
         'interleave': 'bsq',
         'byte order': 0,  # little endian (0)
@@ -121,16 +149,10 @@ def get_envi_header(state: TisCameraState) -> dict:
         'spectral range': '450-650 nm',
         'bands count': '3 bands',
         'bit depth': bit_depth,
-        # 'pixel pitch': '5.5 μm',
-        # 'imager type': 'CMOS, CMOSIS CMV2000 based',
-        # 'acquisition speed': 'up to 120 hyperspectral cubes/second (USB3.0 limited)',
-        # 'optics': '16/25/35/50 mm lenses, F2.8, C-mount',
         'interface': 'USB3.0 + GPIO + I/O for triggering',
-        # 'power consumption': '1.6 Watt',
-        # 'dimensions': '26 x 26 x 31 mm',
-        # 'weight': '32 g (without optics)',
 
         'acquisition time': datetime.now().isoformat(),
+        'exposure time (ms)': f"{state.current_exposure}",
         'description': 'Bayer mosaic image snapshot.',
         'filter array size': '2x2',
         'wavelength units': 'Nanometers',
@@ -172,11 +194,11 @@ class TisCamera(Camera):
         )
         self.grabber.device_property_map.set_value(
             property_name=ic4.PropId.WIDTH,
-            value=TIS_WIDTH,
+            value=self.shape()[1],
         )
         self.grabber.device_property_map.set_value(
             property_name=ic4.PropId.HEIGHT,
-            value=TIS_HEIGHT,
+            value=self.shape()[0],
         )
         self.grabber.device_property_map.set_value(
             property_name=ic4.PropId.EXPOSURE_TIME,
@@ -251,6 +273,9 @@ class TisCamera(Camera):
             TIS_EXPOSURE_INCREMENT * 1000,
         )
 
+    def fps_range(self) -> tuple[int, int, int]:
+        return self.state.fps_range()
+
     def set_exposure(self, exposure: int) -> bool:
         self.grabber.device_property_map.set_value(
             property_name=ic4.PropId.EXPOSURE_TIME,
@@ -260,8 +285,8 @@ class TisCamera(Camera):
         return True
 
     def _find_exposure_for_saturation(
-            self,
-            frame: np.ndarray,
+        self,
+        frame: np.ndarray,
     ) -> bool:
         """
         Binary search for exposure time to keep saturated pixels under max_saturation.

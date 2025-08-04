@@ -95,7 +95,7 @@ class VideoPlayer(QWidget):
 
         self.fps_slider = QSlider(Qt.Horizontal)  # Or Qt.Vertical
         self.fps_slider.setMinimum(1)
-        self.fps_slider.setMaximum(100)
+        self.fps_slider.setMaximum(1000)
         self.fps_slider.setValue(int(self.state.fps))
         self.fps_slider.setSingleStep(1)
         self.fps_slider.setPageStep(10)
@@ -198,8 +198,8 @@ class VideoPlayer(QWidget):
         self.camera_select.setEnabled(False)
         self.exposure_input.setEnabled(True)
         self.exposure_slider.setEnabled(True)
+        self.setup_fps_slider(fps_val=self.state.fps)
         exposure = self.camera.exposure()
-        self.exposure_input.setText(f"{exposure:d}")
         self.setup_exposure_slider(exposure_val=exposure)
         self.disable_pausing()
         self.state.running = True
@@ -356,18 +356,17 @@ class VideoPlayer(QWidget):
 
     def update_fps(self, fps_val: float):
         try:
-            fps_val = float(fps_val)
-            if fps_val <= 0:
-                return
-            if fps_val < self.fps_slider.minimum():
-                fps_val = self.fps_slider.minimum()
-            if fps_val > self.fps_slider.maximum():
-                fps_val = self.fps_slider.maximum()
-            self.state.fps = fps_val
-            self.timer.setInterval(int(1_000 // self.state.fps))
+            fps_old = int(fps_val)
+            fps_new = fps_old
+            if fps_new < self.fps_slider.minimum():
+                fps_new = self.fps_slider.minimum()
+            if fps_new > self.fps_slider.maximum():
+                fps_new = self.fps_slider.maximum()
+            if fps_new != fps_old:
+                self.state.fps = float(fps_new)
+                self.timer.setInterval(int(1_000 // self.state.fps))
             self.fps_slider.setValue(int(fps_val))
             self.fps_input.setText(f"{fps_val:d}")
-            # self.setup_exposure_slider(exposure_val=self.camera.exposure())
         except (ValueError, TypeError):
             self.fps_slider.setValue(int(self.state.fps))
             self.fps_input.setText(f"{int(self.state.fps):d}")
@@ -382,15 +381,17 @@ class VideoPlayer(QWidget):
         if (not self.state.running) or self.state.paused:
             return
         try:
-            exposure_val = int(exposure_val)
-            if exposure_val > self.exposure_slider.maximum():
-                exposure_val = self.exposure_slider.maximum()
-            if exposure_val < self.exposure_slider.minimum():
-                exposure_val = self.exposure_slider.minimum()
-            exposure_val = exposure_val - exposure_val % self.camera.exposure_range()[2]
-            self.camera.set_exposure(exposure_val)
-            self.exposure_input.setText(f"{exposure_val}")
-            self.exposure_slider.setValue(exposure_val)
+            exposure_old = int(exposure_val)
+            exposure_new = exposure_old
+            if exposure_new > self.exposure_slider.maximum():
+                exposure_new = self.exposure_slider.maximum()
+            if exposure_new < self.exposure_slider.minimum():
+                exposure_new = self.exposure_slider.minimum()
+            exposure_new = exposure_new - exposure_new % self.camera.exposure_range()[2]
+            if exposure_new != exposure_old:
+                self.camera.set_exposure(exposure_new)
+            self.exposure_input.setText(f"{exposure_new}")
+            self.exposure_slider.setValue(exposure_new)
         except (ValueError, self.camera.exception_type()):
             exposure_val = self.camera.exposure()
             self.exposure_input.setText(f"{exposure_val}")
@@ -402,8 +403,14 @@ class VideoPlayer(QWidget):
         self.exposure_slider.setValue(exposure_val)
         self.exposure_slider.setRange(int(cam_range[0]), max_exposure)
         self.exposure_slider.setSingleStep(int(cam_range[2]))
-        if exposure_val > max_exposure or exposure_val < cam_range[0]:
-            self.update_exposure(exposure_val=max_exposure)
+        self.update_exposure(exposure_val=exposure_val)
+
+    def setup_fps_slider(self, fps_val: float):
+        fps_range = self.camera.fps_range()
+        self.fps_slider.setRange(int(fps_range[0]), int(fps_range[1]))
+        self.fps_slider.setSingleStep(int(fps_range[2]))
+        self.update_fps(fps_val=fps_val)
+
 
     def update_filename(self):
         try:

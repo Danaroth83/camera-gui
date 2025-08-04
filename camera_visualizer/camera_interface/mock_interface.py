@@ -71,6 +71,13 @@ class Camera(ABC):
         ...
 
     @abstractmethod
+    def fps_range(self) -> tuple[int, int, int]:
+        """
+        Gets a tuple for the minimum, maximum and step for the allowed fps
+        in a camera.
+        """
+
+    @abstractmethod
     def set_exposure(self, exposure: int) -> bool:
         """
         Sets the exposure level (in microseconds).
@@ -190,6 +197,9 @@ class MockCamera(Camera):
 
     def exposure_range(self) -> tuple[int, int, int]:
         return 100, 500_000, 20
+
+    def fps_range(self) -> tuple[int, int, int]:
+        return 5, 50, 5
 
     def set_exposure(self, exposure: int) -> bool:
         if exposure >= self._exposure_max or exposure <= self._exposure_min:
