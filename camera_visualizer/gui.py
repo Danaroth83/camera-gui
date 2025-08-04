@@ -27,10 +27,16 @@ from camera_visualizer.camera_interface.mock_interface import (
 from camera_visualizer.serializer import SaveFormatEnum
 
 
+EXPOSURE_DEFAULT_RANGE = (1_000, 1_000_000, 100)
+EXPOSURE_DEFAULT_VALUE = 10_000
+FPS_DEFAULT_RANGE = (1, 500, 1)
+FPS_DEFAULT_VALUE = 30
+
+
 @dataclass
 class GuiState:
     selected_camera: CameraEnum = CameraEnum.MOCK
-    fps: float = 30
+    fps: float = FPS_DEFAULT_VALUE
     frame_counter: int = 0
     dropped_frames: int = 0
     recording: bool = False
@@ -90,17 +96,18 @@ class VideoPlayer(QWidget):
         view_layout.addWidget(self.bit_depth_button)
 
         # FPS and Exposure Inputs
-        self.fps_input = QLineEdit(f"{self.state.fps}")
+        self.fps_input = QLineEdit("")
         self.fps_input.editingFinished.connect(self.update_fps_from_input)
 
-        self.fps_slider = QSlider(Qt.Horizontal)  # Or Qt.Vertical
-        self.fps_slider.setMinimum(1)
-        self.fps_slider.setMaximum(1000)
-        self.fps_slider.setValue(int(self.state.fps))
-        self.fps_slider.setSingleStep(1)
-        self.fps_slider.setPageStep(10)
+        self.fps_slider = QSlider(Qt.Horizontal)
         self.fps_slider.valueChanged.connect(lambda value: self.fps_input.setText(f"{value:d}"))
         self.fps_slider.sliderReleased.connect(self.update_fps_from_slider)
+
+        self.init_fps_slider(
+            slider=self.fps_slider,
+            text_input=self.fps_input,
+            value=int(self.state.fps),
+        )
 
         layout_fps = QHBoxLayout()
         layout_fps.addWidget(self.fps_slider)
@@ -111,14 +118,17 @@ class VideoPlayer(QWidget):
         self.exposure_input.editingFinished.connect(self.update_exposure_from_input)
 
         self.exposure_slider = QSlider(Qt.Horizontal)  # Or Qt.Vertical
-        self.exposure_slider.setMinimum(1_000)
-        self.exposure_slider.setMaximum(1_000_000)
-        self.exposure_slider.setSingleStep(10)
-        self.exposure_slider.setPageStep(100)
-        self.exposure_slider.setValue(int(self.camera.exposure()))
+        self.exposure_slider.setValue(EXPOSURE_DEFAULT_VALUE)
         self.exposure_slider.valueChanged.connect(lambda value: self.exposure_input.setText(f"{value}"))
         self.exposure_slider.sliderReleased.connect(self.update_exposure_from_slider)
         self.exposure_slider.setEnabled(False)
+
+        self.init_exposure_slider(
+            slider=self.exposure_slider,
+            text_input=self.exposure_input,
+            value=EXPOSURE_DEFAULT_VALUE,
+        )
+
         self.exposure_button = QPushButton("Estimate Exposure Time")
         self.exposure_button.clicked.connect(self.estimate_exposure)
 
@@ -214,6 +224,16 @@ class VideoPlayer(QWidget):
         self.exposure_input.setEnabled(False)
         self.exposure_slider.setEnabled(False)
         self.camera.close()
+        self.init_fps_slider(
+            slider=self.fps_slider,
+            text_input=self.fps_input,
+            value=int(self.state.fps),
+        )
+        self.init_exposure_slider(
+            slider=self.exposure_slider,
+            text_input=self.exposure_input,
+            value=self.exposure_slider.value(),
+        )
         self.disable_pausing()
         self.state.running = False
         self.play_button.setText("Play")
@@ -376,6 +396,34 @@ class VideoPlayer(QWidget):
 
     def update_exposure_from_slider(self):
         self.update_exposure(exposure_val=self.exposure_slider.value())
+
+    @staticmethod
+    def init_exposure_slider(slider: QSlider, text_input: QLineEdit,value: int):
+        slider.setRange(EXPOSURE_DEFAULT_RANGE[0], EXPOSURE_DEFAULT_RANGE[1])
+        slider.setSingleStep(EXPOSURE_DEFAULT_RANGE[2])
+        slider.setPageStep(EXPOSURE_DEFAULT_RANGE[2])
+        if value < EXPOSURE_DEFAULT_RANGE[0]:
+            value = EXPOSURE_DEFAULT_RANGE[0]
+        if value > EXPOSURE_DEFAULT_RANGE[1]:
+            value = EXPOSURE_DEFAULT_RANGE[1]
+        value = value - value % EXPOSURE_DEFAULT_RANGE[2]
+        slider.setValue(value)
+        text_input.setText(f"{value:d}")
+
+    @staticmethod
+    def init_fps_slider(slider: QSlider, text_input: QLineEdit, value: int):
+        slider.setRange(FPS_DEFAULT_RANGE[0], FPS_DEFAULT_RANGE[1])
+        slider.setSingleStep(FPS_DEFAULT_RANGE[2])
+        slider.setPageStep(FPS_DEFAULT_RANGE[2])
+        if value < FPS_DEFAULT_RANGE[0]:
+            value = FPS_DEFAULT_RANGE[0]
+        if value > FPS_DEFAULT_RANGE[1]:
+            value = FPS_DEFAULT_RANGE[1]
+        value = value - value % FPS_DEFAULT_RANGE[2]
+        value = int(value)
+        slider.setValue(value)
+        text_input.setText(f"{value:d}")
+        # No need to update self.state.fps here, since it is a mock value
 
     def update_exposure(self, exposure_val: int):
         if (not self.state.running) or self.state.paused:
