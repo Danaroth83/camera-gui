@@ -63,7 +63,7 @@ You can also run two camera feeds at the same time by running:
 python camera_visualizer/gui_double.py
 ```
 
-If the dependencies internally, you can run the script directly without
+If the dependencies are resolved internally, you can run the script directly without
 installing the library by typing:
 ```bash
 python -m camera_visualizer.gui
@@ -85,7 +85,7 @@ To start a camera acquisition:
 
 For setting the exposure time, either:
 - Click the button `Estimate exposure time`
-- Change the exposure time in the box `Exposure time (us)`
+- Change the exposure time in the box `Exposure time (us)` or with the slider
 
 For saving video frames:
 - Type the save format;
@@ -100,7 +100,7 @@ To exit, just close the visualization applet.
 ## Camera API
 
 For detailed instructions to install the API/SDK of the supported cameras, 
-please consult:
+please consult our internal guides:
 
 - [XIMEA MQ02HG-IM-SM4x4-REDNIR](./data/docs/ximea.md)
 - [The Imaging Source DFK 23UX236](./data/docs/tis.md)
@@ -116,20 +116,16 @@ To interface a new camera to the GUI:
 
 ## Plate designs
 
-The repository also contains some 3d designs for a plate to mount a camera
-over a standard tripod in the folder `data\plate_design`.
-The plate was designed for a combined acquisition of two companion cameras:
-- XIMEA model MQ02HG-IM-SM4x4.
-- The Imaging Source (TIS) model DFK 23UK236.
+The 3d plate  designs are intended to simultaneously mount two cameras (MQ02HG-IM-SM4x4 and TIS DFK 23UK236) over a standard tripod.
 
-The folder contains:
+The designs, collected in the folder `data\plate_designs`, include:
 - The original measurement design: `cameras_94mm_v2.pdf`
 - A 2d draft for lasercuts: `plate_design.pdf`
 - Blender 3d renders for the machine: `scaled_holed_plate.blend`
 - An STL conversion for 3d printing: `scaled_holed_plate.stl`
 - The sliced version for the Flashforge 3d printer: `scaled_holed_plate.gx`
 
-The design `cameras_94mm_v2.pdf` designed by:
+The draft `cameras_94mm_v2.pdf` was prepared by:
 - Kuniaki Uto [uto@wise-sss.titech.ac.jp](mailto:uto@wise-sss.titech.ac.jp)
 
 
