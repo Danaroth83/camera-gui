@@ -203,6 +203,7 @@ class VideoPlayer(QWidget):
             print(e)
             self.open_label.setText("Device unavailable.")
             return
+        self.state.running = True
         self.fps_input.setEnabled(False)
         self.fps_slider.setEnabled(False)
         self.camera_select.setEnabled(False)
@@ -212,12 +213,12 @@ class VideoPlayer(QWidget):
         exposure = self.camera.exposure()
         self.setup_exposure_slider(exposure_val=exposure)
         self.disable_pausing()
-        self.state.running = True
         self.play_button.setText("Stop")
 
     def disable_running(self):
         if not self.state.running:
             return
+        self.state.running = False
         self.fps_input.setEnabled(True)
         self.fps_slider.setEnabled(True)
         self.camera_select.setEnabled(True)
@@ -235,7 +236,6 @@ class VideoPlayer(QWidget):
             value=self.exposure_slider.value(),
         )
         self.disable_pausing()
-        self.state.running = False
         self.play_button.setText("Play")
 
     def toggle_pausing(self) -> None:
@@ -450,16 +450,12 @@ class VideoPlayer(QWidget):
         max_exposure = int(min(1_000_000 // self.state.fps, cam_range[1]))
         self.exposure_slider.setRange(int(cam_range[0]), max_exposure)
         self.exposure_slider.setSingleStep(int(cam_range[2]))
-        self.exposure_slider.setValue(exposure_val)
-        self.exposure_input.setText(f"{exposure_val:d}")
         self.update_exposure(exposure_val=exposure_val)
 
     def setup_fps_slider(self, fps_val: float):
         fps_range = self.camera.fps_range()
         self.fps_slider.setRange(int(fps_range[0]), int(fps_range[1]))
         self.fps_slider.setSingleStep(int(fps_range[2]))
-        self.fps_slider.setValue(int(fps_val))
-        self.fps_input.setText(f"{int(fps_val):d}")
         self.update_fps(fps_val=fps_val)
 
 
