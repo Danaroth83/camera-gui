@@ -211,6 +211,8 @@ class VideoPlayer(QWidget):
         self.state.running = True
         scale_ratio = self.camera.shape()[1] / self.camera.shape()[0]
         self.label.setFixedWidth(int(scale_ratio * self.label.height()))
+
+        print(f"{self.label.size()}")
         self.fps_input.setEnabled(False)
         self.fps_slider.setEnabled(False)
         self.camera_select.setEnabled(False)
