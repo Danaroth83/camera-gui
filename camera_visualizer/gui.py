@@ -68,7 +68,7 @@ class VideoPlayer(QWidget):
 
         self.setWindowTitle("Camera Video Player")
         self.label = QLabel("Waiting for image...")
-        self.label.setFixedHeight(int(size.height() * 0.5), int(size.width() * 0.5))
+        self.label.setFixedHeight(int(size.height() * 0.5))
 
         self.play_button = QPushButton("Play")
         self.play_button.clicked.connect(self.toggle_running)
