@@ -36,6 +36,7 @@ FPS_DEFAULT_VALUE = 30
 @dataclass
 class GuiState:
     selected_camera: CameraEnum = CameraEnum.MOCK
+    exposure: int = EXPOSURE_DEFAULT_VALUE
     fps: float = FPS_DEFAULT_VALUE
     frame_counter: int = 0
     dropped_frames: int = 0
@@ -385,14 +386,13 @@ class VideoPlayer(QWidget):
 
     def update_fps(self, fps_val: float):
         try:
-            fps_old = int(fps_val)
-            fps_new = fps_old
-            if fps_new < self.fps_slider.minimum():
-                fps_new = self.fps_slider.minimum()
-            if fps_new > self.fps_slider.maximum():
-                fps_new = self.fps_slider.maximum()
-            if fps_new != fps_old:
-                self.state.fps = float(fps_new)
+            fps_val = int(fps_val)
+            if fps_val < self.fps_slider.minimum():
+                fps_val = self.fps_slider.minimum()
+            if fps_val > self.fps_slider.maximum():
+                fps_val = self.fps_slider.maximum()
+            if float(fps_val) != self.state.fps:
+                self.state.fps = float(fps_val)
                 self.timer.setInterval(int(1_000 // self.state.fps))
             self.fps_slider.setValue(int(fps_val))
             self.fps_input.setText(f"{fps_val:d}")
@@ -438,17 +438,16 @@ class VideoPlayer(QWidget):
         if (not self.state.running) or self.state.paused:
             return
         try:
-            exposure_old = int(exposure_val)
-            exposure_new = exposure_old
-            if exposure_new > self.exposure_slider.maximum():
-                exposure_new = self.exposure_slider.maximum()
-            if exposure_new < self.exposure_slider.minimum():
-                exposure_new = self.exposure_slider.minimum()
-            exposure_new = exposure_new - exposure_new % self.camera.exposure_range()[2]
-            if exposure_new != exposure_old:
-                self.camera.set_exposure(exposure_new)
-            self.exposure_input.setText(f"{exposure_new}")
-            self.exposure_slider.setValue(exposure_new)
+            exposure_val = int(exposure_val)
+            if exposure_val > self.exposure_slider.maximum():
+                exposure_val = self.exposure_slider.maximum()
+            if exposure_val < self.exposure_slider.minimum():
+                exposure_val = self.exposure_slider.minimum()
+            exposure_val = exposure_val - exposure_val % self.camera.exposure_range()[2]
+            if exposure_val != self.state.exposure:
+                self.camera.set_exposure(exposure_val)
+            self.exposure_input.setText(f"{exposure_val}")
+            self.exposure_slider.setValue(exposure_val)
         except (ValueError, self.camera.exception_type()):
             exposure_val = self.camera.exposure()
             self.exposure_input.setText(f"{exposure_val}")
