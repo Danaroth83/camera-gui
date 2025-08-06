@@ -14,7 +14,8 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QFormLayout,
     QComboBox,
-    QSlider, QHBoxLayout,
+    QSlider,
+    QHBoxLayout,
 )
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
@@ -64,12 +65,8 @@ class VideoPlayer(QWidget):
         self.state = GuiState(selected_camera=camera_id, fps=fps)
         self.current_image = None
 
-        screen = QApplication.primaryScreen()
-        size = screen.availableGeometry()
-
         self.setWindowTitle("Camera Video Player")
         self.label = QLabel("Waiting for image...")
-        self.label.setFixedHeight(int(size.height() * 0.5))
 
         self.play_button = QPushButton("Play")
         self.play_button.clicked.connect(self.toggle_running)
@@ -145,13 +142,10 @@ class VideoPlayer(QWidget):
 
         self.recording_label = QLabel("")
         self.recording_label.setStyleSheet("color: red; font-weight: bold")
-        self.recording_label.setFixedHeight(30)
         self.open_label = QLabel("")
         self.open_label.setStyleSheet("color: red; font-weight: bold")
-        self.open_label.setFixedHeight(30)
         self.frame_label = QLabel("")
         self.frame_label.setStyleSheet("color: red; font-weight: bold")
-        self.frame_label.setFixedHeight(30)
         warning_layout = QHBoxLayout()
         warning_layout.addWidget(self.recording_label)
         warning_layout.addWidget(self.open_label)
@@ -180,12 +174,12 @@ class VideoPlayer(QWidget):
         control_layout.addRow("Exposure (μs):", layout_exposure)
 
         layout = QVBoxLayout()
-        layout.addWidget(self.label)
-        layout.addLayout(play_layout)
-        layout.addLayout(view_layout)
-        layout.addLayout(warning_layout)
-        layout.addLayout(record_layout)
-        layout.addLayout(control_layout)
+        layout.addWidget(self.label, stretch=40)
+        layout.addLayout(play_layout, stretch=0)
+        layout.addLayout(view_layout, stretch=0)
+        layout.addLayout(warning_layout, stretch=0)
+        layout.addLayout(record_layout, stretch=0)
+        layout.addLayout(control_layout, stretch=0)
         layout.addStretch()
         self.setLayout(layout)
 
@@ -193,7 +187,49 @@ class VideoPlayer(QWidget):
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(int(1000 // self.state.fps))
 
-        self.resize(int(size.width() * 0.6), int(size.height() * 0.6))
+        self.setStyleSheet(
+            """
+            QLabel, QPushButton, QSlider, QComboBox, QLabel, QLineEdit {
+                font-size: 14pt;
+            }
+            QPushButton, QComboBox, QFormLayout, QLabel, QLineEdit {
+                min-height: 48px;
+            }
+            QSlider {
+                min-height: 40px;
+            }
+            
+            QSlider::groove:horizontal {
+                height: 16px;
+                background: #bbb;
+                border-radius: 8px;
+            }
+        
+            QSlider::handle:horizontal {
+                background: #444;
+                border: 1px solid #666;
+                width: 24px;
+                height: 24px;
+                margin: -5px 0;  /* centers the handle on the groove */
+                border-radius: 12px;
+            }
+            """
+        )
+        self.initial_scale()
+
+    def initial_scale(self) -> None:
+        screen = QApplication.primaryScreen()
+        size = screen.availableGeometry()
+        aspect_ratio = size.width() / size.height()
+        if aspect_ratio >= 1:  # Landscape
+            initial_w = int(0.4 * size.width())
+            initial_h = int(0.9 * size.height())
+        else: # Portrait
+            initial_w = int(0.9 * size.width())
+            initial_h = int(0.9 * size.width())
+
+        self.label.setMinimumHeight(int(0.6 * initial_h))
+        self.resize(initial_w, initial_h)
 
     def toggle_running(self) -> None:
         self.disable_running() if self.state.running else self.enable_running()
@@ -213,7 +249,6 @@ class VideoPlayer(QWidget):
         scale_ratio = self.camera.shape()[1] / self.camera.shape()[0]
         self.label.setFixedWidth(int(scale_ratio * self.label.height()))
 
-        print(f"{self.label.size()}")
         self.fps_input.setEnabled(False)
         self.fps_slider.setEnabled(False)
         self.camera_select.setEnabled(False)
@@ -476,10 +511,6 @@ class VideoPlayer(QWidget):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Camera visualizer with optional window resize.")
-    parser.add_argument('--width', '-W', type=int, default=640, help='Window width')
-    parser.add_argument('--height', '-H', type=int, default=480, help='Window height')
-    args = parser.parse_args()
 
     app = QApplication(sys.argv)
     try:
@@ -491,7 +522,6 @@ def main():
         raise e
 
     player = VideoPlayer(camera_id=camera_id, fps=30)
-    player.resize(args.width, args.height)
     player.show()
     sys.exit(app.exec_())
 
