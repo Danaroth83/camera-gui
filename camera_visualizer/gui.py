@@ -459,7 +459,7 @@ class VideoPlayer(QWidget):
         self.fps_slider.setRange(int(fps_range[0]), int(fps_range[1]))
         self.fps_slider.setSingleStep(int(fps_range[2]))
         self.fps_slider.setValue(int(fps_val))
-        self.fps_slider.setText(f"{int(fps_val):d}")
+        self.fps_input.setText(f"{int(fps_val):d}")
         self.update_fps(fps_val=fps_val)
 
 
