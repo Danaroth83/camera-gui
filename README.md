@@ -94,6 +94,14 @@ For saving video frames:
 - Press the `Stop recording` button to stop the recording. 
 Files will be saved in `data/[camera_name]/[filename]_[timestamp]` and with a 
 sequential index.
+- In case you want to save to a custom data folder, either:
+  - Type `export DATA_PATH=/your/path/to/data` in terminal before running the
+    GUI
+  - Create a `.env` file and put it in the same folder as this `README.md` 
+    file with the only line:
+    ```bash
+    DATA_PATH=/your/path/to/data
+    ```
 
 To exit, just close the visualization applet.
 
