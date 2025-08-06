@@ -63,9 +63,12 @@ class VideoPlayer(QWidget):
         self.state = GuiState(selected_camera=camera_id, fps=fps)
         self.current_image = None
 
+        screen = QApplication.primaryScreen()
+        size = screen.availableGeometry()
+
         self.setWindowTitle("Camera Video Player")
         self.label = QLabel("Waiting for image...")
-        self.label.setFixedHeight(480)
+        self.label.setFixedHeight(int(size.height() * 0.5))
 
         self.play_button = QPushButton("Play")
         self.play_button.clicked.connect(self.toggle_running)
@@ -188,6 +191,8 @@ class VideoPlayer(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(int(1000 // self.state.fps))
+
+        self.resize(int(size.width() * 0.6), int(size.height() * 0.6))
 
     def toggle_running(self) -> None:
         self.disable_running() if self.state.running else self.enable_running()
