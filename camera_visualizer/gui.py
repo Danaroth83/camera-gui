@@ -220,7 +220,7 @@ class VideoPlayer(QWidget):
         self.disable_pausing()
         self.play_button.setText("Stop")
         scale_ratio = self.camera.shape()[1] / self.camera.shape()[0]
-        self.label.setFixedWidth(int(scale_ratio * self.label.height())
+        self.label.setFixedWidth(int(scale_ratio * self.label.height()))
 
     def disable_running(self):
         if not self.state.running:
