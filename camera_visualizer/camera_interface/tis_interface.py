@@ -20,7 +20,7 @@ class TisShapeEnum(str, Enum):
 # Camera Constants
 TIS_MIN_EXPOSURE_MS = 15
 TIS_MAX_EXPOSURE_MS = 33_333
-TIS_EXPOSURE_INCREMENT = 10
+TIS_EXPOSURE_INCREMENT = 1
 TIS_TIMEOUT_MS = 10_000
 
 # Default Camera States
