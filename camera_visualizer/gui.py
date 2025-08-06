@@ -448,9 +448,9 @@ class VideoPlayer(QWidget):
     def setup_exposure_slider(self, exposure_val: int):
         cam_range = self.camera.exposure_range()
         max_exposure = int(min(1_000_000 // self.state.fps, cam_range[1]))
-        self.exposure_slider.setValue(exposure_val)
         self.exposure_slider.setRange(int(cam_range[0]), max_exposure)
         self.exposure_slider.setSingleStep(int(cam_range[2]))
+        self.exposure_slider.setValue(exposure_val)
         self.update_exposure(exposure_val=exposure_val)
 
     def setup_fps_slider(self, fps_val: float):
