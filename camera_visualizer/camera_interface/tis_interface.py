@@ -51,12 +51,12 @@ TIS_SHAPE_DICT = [
     {
         "type": TisShapeEnum.LOW,
         "shape": (480, 640, 1),
-        "fps_range": (5, 30, 5),
+        "fps_range": (5, 30, 1),
     },
     {
         "type": TisShapeEnum.HIGH,
         "shape": (1200, 1920, 1),
-        "fps_range": (5, 5, 1),
+        "fps_range": (1, 5, 1),
     }
 ]
 
