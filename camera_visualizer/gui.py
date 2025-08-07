@@ -1,4 +1,3 @@
-import argparse
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -228,7 +227,7 @@ class VideoPlayer(QWidget):
             initial_w = int(0.9 * size.width())
             initial_h = int(0.9 * size.width())
 
-        self.label.setMinimumHeight(int(0.6 * initial_h))
+        self.label.setFixedHeight(int(0.6 * initial_h))
         self.resize(initial_w, initial_h)
 
     def toggle_running(self) -> None:
@@ -252,11 +251,18 @@ class VideoPlayer(QWidget):
         self.fps_input.setEnabled(False)
         self.fps_slider.setEnabled(False)
         self.camera_select.setEnabled(False)
-        self.exposure_input.setEnabled(True)
-        self.exposure_slider.setEnabled(True)
+        if self.camera.is_auto_exposure():
+            self.exposure_input.setEnabled(False)
+            self.exposure_slider.setEnabled(False)
+            self.exposure_button.setEnabled(False)
+        else:
+            self.exposure_input.setEnabled(True)
+            self.exposure_slider.setEnabled(True)
+            self.exposure_button.setEnabled(True)
         self.setup_fps_slider(fps_val=self.state.fps)
         exposure = self.camera.exposure()
         self.setup_exposure_slider(exposure_val=exposure)
+        self.bit_depth_button.setText(f"Toggle bit depth: {self.camera.bit_depth()}")
         self.disable_pausing()
         self.play_button.setText("Stop")
 
@@ -282,6 +288,7 @@ class VideoPlayer(QWidget):
         )
         self.disable_pausing()
         self.play_button.setText("Play")
+        self.label.setText("Waiting for image...")
 
     def toggle_pausing(self) -> None:
         self.disable_pausing() if self.state.paused else self.enable_pausing()

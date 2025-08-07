@@ -76,6 +76,14 @@ class Camera(ABC):
         Gets a tuple for the minimum, maximum and step for the allowed fps
         in a camera.
         """
+        ...
+
+    @abstractmethod
+    def is_auto_exposure(self) -> bool:
+        """
+        Returns True if camera is set to automatic exposure
+        """
+        ...
 
     @abstractmethod
     def set_exposure(self, exposure: int) -> bool:
@@ -206,6 +214,9 @@ class MockCamera(Camera):
             return False
         self._exposure = exposure
         return True
+    
+    def is_auto_exposure(self) -> bool:
+        return False
 
     def init_exposure(self, max_exposure: int) -> None:
         self._exposure_max = min(max_exposure, 500_000)

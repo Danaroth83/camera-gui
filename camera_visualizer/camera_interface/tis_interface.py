@@ -25,7 +25,7 @@ TIS_TIMEOUT_MS = 10_000
 
 # Default Camera States
 TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.BayerGB16
-TIS_DEFAULT_SHAPE = TisShapeEnum.LOW
+TIS_DEFAULT_SHAPE = TisShapeEnum.HIGH
 TIS_DEFAULT_EXPOSURE_TIME_MS = 500
 
 
@@ -51,12 +51,12 @@ TIS_SHAPE_DICT = [
     {
         "type": TisShapeEnum.LOW,
         "shape": (480, 640, 1),
-        "fps_range": (5, 30 , 5),
+        "fps_range": (5, 30, 5),
     },
     {
         "type": TisShapeEnum.HIGH,
         "shape": (1200, 1920, 1),
-        "fps_range": (5, 6, 1),
+        "fps_range": (5, 5, 1),
     }
 ]
 
@@ -91,6 +91,7 @@ class TisCameraState:
     save_subfolder: str | None = None
     min_exposure: float = TIS_MIN_EXPOSURE_MS
     max_exposure: float = TIS_MAX_EXPOSURE_MS
+    auto_exposure: bool = True
 
     @property
     def save_path(self) -> Path | None:
@@ -259,7 +260,10 @@ class TisCamera(Camera):
 
     def save_folder(self) -> Path:
         return self.state.save_path
-
+    
+    def is_auto_exposure(self) -> bool:
+        return self.state.auto_exposure
+    
     def exception_type(self) -> Type[ic4.IC4Exception]:
         return ic4.IC4Exception
 

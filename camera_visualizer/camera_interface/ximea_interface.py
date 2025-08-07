@@ -222,6 +222,7 @@ class XimeaCamera(Camera):
 
     def open(self):
         self.cam.open_device()
+        self.toggle_bit_depth()     # Set initial bit depth to 10 bits
         self.cam.start_acquisition()
         self.img = xiapi.Image()
         self.state.sync(cam=self.cam)
@@ -281,6 +282,24 @@ class XimeaCamera(Camera):
             state=self.state,
             frame=frame,
         )
+    
+    def is_auto_exposure(self) -> bool:
+        return False
+    
+    def toggle_auto_exposure(self) -> None:
+        # This code does not seem to work
+        if self.state.auto_exposure:
+            aeag = self.cam.is_aeag()
+            if not aeag:
+                self.state.auto_exposure = False
+                return
+            self.cam.disable_aeag()
+        else:
+            aeag = self.cam.is_aeag()
+            if not aeag:
+                self.state.auto_exposure = True
+                return
+            self.cam.enable_aeag()
 
     def set_save_subfolder(self, subfolder: str) -> None:
         self.state.save_subfolder = subfolder
