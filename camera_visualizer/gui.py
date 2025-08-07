@@ -403,6 +403,7 @@ class VideoPlayer(QWidget):
                 frame=frame_save,
                 fmt=self.state.recording_format,
             )
+            self.state.frame_counter += 1
         if self.state.estimating_exposure and frame_save is not None:
             converged = self.camera.check_exposure(frame=frame_save)
             self.state.estimating_exposure = not converged
