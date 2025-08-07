@@ -220,7 +220,7 @@ class XimeaCamera(Camera):
         )
         self.state = state
 
-    def open(self):
+    def open(self, fps: float):
         self.cam.open_device()
         self.toggle_bit_depth()     # Set initial bit depth to 10 bits
         self.cam.start_acquisition()

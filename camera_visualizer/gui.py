@@ -234,7 +234,7 @@ class VideoPlayer(QWidget):
     def enable_running(self):
         try:
             self.camera = camera(camera_id=self.state.selected_camera)
-            self.camera.open()
+            self.camera.open(fps=self.state.fps)
             self.open_label.setText("")
         except (self.camera.exception_type(), ModuleNotFoundError) as e:
             print(e)

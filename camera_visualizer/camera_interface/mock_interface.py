@@ -13,7 +13,7 @@ from camera_visualizer.serializer import save_frame, SaveFormatEnum
 class Camera(ABC):
 
     @abstractmethod
-    def open(self) -> None:
+    def open(self, fps: float) -> None:
         """
         Instructions to open the device and start the stream.
         """
@@ -182,7 +182,7 @@ class MockCamera(Camera):
         self._save_folder = data_path
         self._subfolder = None
 
-    def open(self) -> None:
+    def open(self, fps: float) -> None:
         pass
 
     def close(self) -> None:
