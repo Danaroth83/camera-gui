@@ -65,18 +65,17 @@ class VideoPlayer(QWidget):
         self.current_image = None
 
         self.setWindowTitle("Camera Video Player")
-        self.label = QLabel("Waiting for image...")
+        self.label = QLabel("")
 
-        self.play_button = QPushButton("Play")
+        self.play_button = QPushButton("")
         self.play_button.clicked.connect(self.toggle_running)
-        self.pause_button = QPushButton("Pause")
+        self.pause_button = QPushButton("")
         self.pause_button.clicked.connect(self.toggle_pausing)
 
         self.camera_select = QComboBox()
         self.camera_select.addItems([e.value for e in CameraEnum])
         self.camera_select.currentIndexChanged.connect(self.choose_camera)
         self.camera_select.setCurrentText(self.state.selected_camera)
-        self.camera_select.setEnabled(True)
         camera_select = QFormLayout()
         camera_select.addRow("Camera:", self.camera_select)
 
@@ -114,14 +113,12 @@ class VideoPlayer(QWidget):
         layout_fps.addWidget(self.fps_input)
 
         self.exposure_input = QLineEdit(f"{self.camera.exposure():d}")
-        self.exposure_input.setEnabled(False)
         self.exposure_input.editingFinished.connect(self.update_exposure_from_input)
 
         self.exposure_slider = QSlider(Qt.Horizontal)  # Or Qt.Vertical
         self.exposure_slider.setValue(EXPOSURE_DEFAULT_VALUE)
         self.exposure_slider.valueChanged.connect(lambda value: self.exposure_input.setText(f"{value}"))
         self.exposure_slider.sliderReleased.connect(self.update_exposure_from_slider)
-        self.exposure_slider.setEnabled(False)
 
         self.init_exposure_slider(
             slider=self.exposure_slider,
@@ -215,6 +212,7 @@ class VideoPlayer(QWidget):
             """
         )
         self.initial_scale()
+        self.disable_running()
 
     def initial_scale(self) -> None:
         screen = QApplication.primaryScreen()
@@ -234,8 +232,6 @@ class VideoPlayer(QWidget):
         self.disable_running() if self.state.running else self.enable_running()
 
     def enable_running(self):
-        if self.state.running:
-            return
         try:
             self.camera = camera(camera_id=self.state.selected_camera)
             self.camera.open()
@@ -267,15 +263,15 @@ class VideoPlayer(QWidget):
         self.play_button.setText("Stop")
 
     def disable_running(self):
-        if not self.state.running:
-            return
+        if self.state.running:
+            self.camera.close()
         self.state.running = False
         self.fps_input.setEnabled(True)
         self.fps_slider.setEnabled(True)
         self.camera_select.setEnabled(True)
         self.exposure_input.setEnabled(False)
         self.exposure_slider.setEnabled(False)
-        self.camera.close()
+        self.exposure_button.setEnabled(False)
         self.init_fps_slider(
             slider=self.fps_slider,
             text_input=self.fps_input,
