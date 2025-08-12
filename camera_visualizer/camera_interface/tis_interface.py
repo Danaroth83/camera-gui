@@ -25,7 +25,7 @@ TIS_TIMEOUT_MS = 10_000
 
 # Default Camera States
 TIS_DEFAULT_PIXEL_FORMAT = ic4.PixelFormat.BayerGB16
-TIS_DEFAULT_SHAPE = TisShapeEnum.LOW
+TIS_DEFAULT_SHAPE = TisShapeEnum.HIGH
 TIS_DEFAULT_EXPOSURE_TIME_MS = 500
 
 
@@ -51,12 +51,12 @@ TIS_SHAPE_DICT = [
     {
         "type": TisShapeEnum.LOW,
         "shape": (480, 640, 1),
-        "fps_range": (5, 30 , 5),
+        "fps_range": (5, 30, 1),
     },
     {
         "type": TisShapeEnum.HIGH,
         "shape": (1200, 1920, 1),
-        "fps_range": (5, 6, 1),
+        "fps_range": (1, 5, 1),
     }
 ]
 
@@ -91,6 +91,7 @@ class TisCameraState:
     save_subfolder: str | None = None
     min_exposure: float = TIS_MIN_EXPOSURE_MS
     max_exposure: float = TIS_MAX_EXPOSURE_MS
+    auto_exposure: bool = True
 
     @property
     def save_path(self) -> Path | None:
@@ -180,7 +181,7 @@ class TisCamera(Camera):
         )
         self.state = state
 
-    def open(self):
+    def open(self, fps: float):
         device_info = ic4.DeviceEnum.devices()
         if len(device_info) < 1:
             raise self.exception_type()(
@@ -200,9 +201,14 @@ class TisCamera(Camera):
             property_name=ic4.PropId.HEIGHT,
             value=self.shape()[0],
         )
+        self.toggle_auto_exposure() # Remove auto exposure
         self.grabber.device_property_map.set_value(
             property_name=ic4.PropId.EXPOSURE_TIME,
             value=self.state.current_exposure,
+        )
+        self.grabber.device_property_map.set_value(
+            ic4.PropId.ACQUISITION_FRAME_RATE, 
+            fps,
         )
         self.sink = ic4.SnapSink(
             accepted_pixel_formats=[
@@ -259,7 +265,20 @@ class TisCamera(Camera):
 
     def save_folder(self) -> Path:
         return self.state.save_path
-
+    
+    def is_auto_exposure(self) -> bool:
+        return self.state.auto_exposure
+    
+    def toggle_auto_exposure(self) -> None:
+        if self.state.auto_exposure:
+            self.grabber.device_property_map.set_value(ic4.PropId.EXPOSURE_AUTO, "Off")
+            self.grabber.device_property_map.set_value(ic4.PropId.GAIN_AUTO, "Off")
+            self.state.auto_exposure = False
+        else:
+            self.grabber.device_property_map.set_value(ic4.PropId.EXPOSURE_AUTO, "On")
+            self.grabber.device_property_map.set_value(ic4.PropId.GAIN_AUTO, "On")
+            self.state.auto_exposure = True
+    
     def exception_type(self) -> Type[ic4.IC4Exception]:
         return ic4.IC4Exception
 
@@ -333,7 +352,7 @@ class TisCamera(Camera):
 def main():
     cam = TisCamera()
 
-    cam.open()
+    cam.open(fps=5.0)
 
     # cam.grabber.device_property_map.set_value(property_name=ic4.PropId.PIXEL_FORMAT, value=ic4.PixelFormat.BayerGB16)
 

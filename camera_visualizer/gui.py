@@ -1,4 +1,3 @@
-import argparse
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -67,18 +66,17 @@ class VideoPlayer(QWidget):
         self.current_image = None
 
         self.setWindowTitle("Camera Video Player")
-        self.label = QLabel("Waiting for image...")
+        self.label = QLabel("")
 
-        self.play_button = QPushButton("Play")
+        self.play_button = QPushButton("")
         self.play_button.clicked.connect(self.toggle_running)
-        self.pause_button = QPushButton("Pause")
+        self.pause_button = QPushButton("")
         self.pause_button.clicked.connect(self.toggle_pausing)
 
         self.camera_select = QComboBox()
         self.camera_select.addItems([e.value for e in CameraEnum])
         self.camera_select.currentIndexChanged.connect(self.choose_camera)
         self.camera_select.setCurrentText(self.state.selected_camera)
-        self.camera_select.setEnabled(True)
         camera_select = QFormLayout()
         camera_select.addRow("Camera:", self.camera_select)
 
@@ -116,14 +114,12 @@ class VideoPlayer(QWidget):
         layout_fps.addWidget(self.fps_input)
 
         self.exposure_input = QLineEdit(f"{self.camera.exposure():d}")
-        self.exposure_input.setEnabled(False)
         self.exposure_input.editingFinished.connect(self.update_exposure_from_input)
 
         self.exposure_slider = QSlider(Qt.Horizontal)  # Or Qt.Vertical
         self.exposure_slider.setValue(EXPOSURE_DEFAULT_VALUE)
         self.exposure_slider.valueChanged.connect(lambda value: self.exposure_input.setText(f"{value}"))
         self.exposure_slider.sliderReleased.connect(self.update_exposure_from_slider)
-        self.exposure_slider.setEnabled(False)
 
         self.init_exposure_slider(
             slider=self.exposure_slider,
@@ -233,18 +229,16 @@ class VideoPlayer(QWidget):
             initial_w = int(0.9 * size.width())
             initial_h = int(0.9 * size.width())
 
-        self.label.setMinimumHeight(int(0.6 * initial_h))
+        self.label.setFixedHeight(int(0.6 * initial_h))
         self.resize(initial_w, initial_h)
 
     def toggle_running(self) -> None:
         self.disable_running() if self.state.running else self.enable_running()
 
     def enable_running(self):
-        if self.state.running:
-            return
         try:
             self.camera = camera(camera_id=self.state.selected_camera)
-            self.camera.open()
+            self.camera.open(fps=self.state.fps)
             self.open_label.setText("")
         except (self.camera.exception_type(), ModuleNotFoundError) as e:
             print(e)
@@ -257,24 +251,24 @@ class VideoPlayer(QWidget):
         self.fps_input.setEnabled(False)
         self.fps_slider.setEnabled(False)
         self.camera_select.setEnabled(False)
-        self.exposure_input.setEnabled(True)
-        self.exposure_slider.setEnabled(True)
-        self.exposure_checkbox.setEnabled(True)
+        self.init_auto_exposure()
         self.setup_fps_slider(fps_val=self.state.fps)
         exposure = self.camera.exposure()
         self.setup_exposure_slider(exposure_val=exposure)
+        self.bit_depth_button.setText(f"Toggle bit depth: {self.camera.bit_depth()}")
         self.disable_pausing()
         self.play_button.setText("Stop")
 
     def disable_running(self):
-        if not self.state.running:
-            return
+        if self.state.running:
+            self.camera.close()
         self.state.running = False
         self.fps_input.setEnabled(True)
         self.fps_slider.setEnabled(True)
         self.camera_select.setEnabled(True)
         self.exposure_input.setEnabled(False)
         self.exposure_slider.setEnabled(False)
+        self.exposure_button.setEnabled(False)
         self.exposure_checkbox.setEnabled(False)
         self.camera.close()
         self.init_fps_slider(
@@ -289,6 +283,7 @@ class VideoPlayer(QWidget):
         )
         self.disable_pausing()
         self.play_button.setText("Play")
+        self.label.setText("Waiting for image...")
 
     def toggle_pausing(self) -> None:
         self.disable_pausing() if self.state.paused else self.enable_pausing()
@@ -331,6 +326,22 @@ class VideoPlayer(QWidget):
             self.filename_input.setEnabled(True)
             self.record_button.setText("Record")
             self.recording_label.setText("")
+
+    def init_auto_exposure(self):
+        if self.camera.is_auto_exposure():
+            self.exposure_input.setEnabled(False)
+            self.exposure_slider.setEnabled(False)
+            self.exposure_button.setEnabled(False)
+            self.exposure_checkbox.setChecked(True)
+        else:
+            self.exposure_input.setEnabled(True)
+            self.exposure_slider.setEnabled(True)
+            self.exposure_button.setEnabled(True)
+            self.exposure_checkbox.setChecked(False)
+
+    def toggle_auto_exposure(self):
+        self.camera.toggle_auto_exposure()
+        self.init_auto_exposure()
 
     def estimate_exposure(self):
         if (not self.state.running) or self.state.paused or self.state.estimating_exposure:
@@ -408,6 +419,7 @@ class VideoPlayer(QWidget):
                 frame=frame_save,
                 fmt=self.state.recording_format,
             )
+            self.state.frame_counter += 1
         if self.state.estimating_exposure and frame_save is not None:
             converged = self.camera.check_exposure(frame=frame_save)
             self.state.estimating_exposure = not converged
@@ -418,7 +430,6 @@ class VideoPlayer(QWidget):
                 self.state.exposure_tries = 0
                 self.exposure_input.setEnabled(True)
                 self.exposure_slider.setEnabled(True)
-                self.exposure_checkbox.setEnabled(True)
                 self.exposure_button.setText("Estimate Exposure Time")
 
     def update_fps_from_input(self):

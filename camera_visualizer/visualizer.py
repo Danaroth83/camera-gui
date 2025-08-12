@@ -89,7 +89,7 @@ def main_run(
     except Exception as e:
         raise e
 
-    camera.open()
+    camera.open(fps=fps)
     camera.set_exposure(exposure=exposure)
     camera.toggle_bit_depth()
     frame, frame_normalized = camera.get_frame(fps=fps)

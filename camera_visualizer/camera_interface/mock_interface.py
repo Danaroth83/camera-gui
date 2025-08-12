@@ -13,7 +13,7 @@ from camera_visualizer.serializer import save_frame, SaveFormatEnum
 class Camera(ABC):
 
     @abstractmethod
-    def open(self) -> None:
+    def open(self, fps: float) -> None:
         """
         Instructions to open the device and start the stream.
         """
@@ -75,6 +75,20 @@ class Camera(ABC):
         """
         Gets a tuple for the minimum, maximum and step for the allowed fps
         in a camera.
+        """
+        ...
+
+    @abstractmethod
+    def is_auto_exposure(self) -> bool:
+        """
+        Returns True if camera is set to automatic exposure
+        """
+        ...
+
+    @abstractmethod
+    def toggle_auto_exposure(self) -> None:
+        """
+        Toggles auto exposure if camera has it available as option
         """
 
     @abstractmethod
@@ -166,6 +180,7 @@ class MockCamera(Camera):
         self._exposure = 10_000
         self._exposure_max = 500_000
         self._exposure_min = 100
+        self._auto_exposure = False
         self._bit_depth = 8
         self._counter = 0
         self._toggle_view = 0
@@ -174,7 +189,7 @@ class MockCamera(Camera):
         self._save_folder = data_path
         self._subfolder = None
 
-    def open(self) -> None:
+    def open(self, fps: float) -> None:
         pass
 
     def close(self) -> None:
@@ -206,6 +221,12 @@ class MockCamera(Camera):
             return False
         self._exposure = exposure
         return True
+    
+    def is_auto_exposure(self) -> bool:
+        return self._auto_exposure
+
+    def toggle_auto_exposure(self) -> None:
+        self._auto_exposure = not self._auto_exposure
 
     def init_exposure(self, max_exposure: int) -> None:
         self._exposure_max = min(max_exposure, 500_000)

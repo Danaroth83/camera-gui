@@ -95,6 +95,12 @@ target/
 .venv
 venv
 
+# lock files
+uv.lock
+poetry.lock
+
+
+# Personalized exclusions
 data/*
 !data/.gitkeep
 !data/plate_design
