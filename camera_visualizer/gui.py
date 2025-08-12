@@ -188,12 +188,14 @@ class VideoPlayer(QWidget):
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(int(1000 // self.state.fps))
 
+        self.disable_running()
+
         self.setStyleSheet(
             """
-            QLabel, QPushButton, QSlider, QComboBox, QLabel, QLineEdit {
+            QLabel, QPushButton, QSlider, QComboBox, QLabel, QLineEdit, QCheckBox {
                 font-size: 14pt;
             }
-            QPushButton, QComboBox, QFormLayout, QLabel, QLineEdit {
+            QPushButton, QComboBox, QFormLayout, QLabel, QLineEdit, QCheckBox {
                 min-height: 48px;
             }
             QSlider {
@@ -328,16 +330,21 @@ class VideoPlayer(QWidget):
             self.recording_label.setText("")
 
     def init_auto_exposure(self):
+        self.exposure_checkbox.setEnabled(True)
         if self.camera.is_auto_exposure():
             self.exposure_input.setEnabled(False)
             self.exposure_slider.setEnabled(False)
             self.exposure_button.setEnabled(False)
+            self.exposure_checkbox.blockSignals(True)
             self.exposure_checkbox.setChecked(True)
+            self.exposure_checkbox.blockSignals(False)
         else:
             self.exposure_input.setEnabled(True)
             self.exposure_slider.setEnabled(True)
             self.exposure_button.setEnabled(True)
+            self.exposure_checkbox.blockSignals(True)
             self.exposure_checkbox.setChecked(False)
+            self.exposure_checkbox.blockSignals(False)
 
     def toggle_auto_exposure(self):
         self.camera.toggle_auto_exposure()
@@ -430,6 +437,10 @@ class VideoPlayer(QWidget):
                 self.state.exposure_tries = 0
                 self.exposure_input.setEnabled(True)
                 self.exposure_slider.setEnabled(True)
+                self.exposure_checkbox.setEnabled(True)
+                self.exposure_checkbox.blockSignals(True)
+                self.exposure_checkbox.setChecked(False)
+                self.exposure_checkbox.blockSignals(False)
                 self.exposure_button.setText("Estimate Exposure Time")
 
     def update_fps_from_input(self):
