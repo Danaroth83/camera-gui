@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QSlider,
     QHBoxLayout,
+    QCheckBox,
 )
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
@@ -133,10 +134,14 @@ class VideoPlayer(QWidget):
         self.exposure_button = QPushButton("Estimate Exposure Time")
         self.exposure_button.clicked.connect(self.estimate_exposure)
 
+        self.exposure_checkbox = QCheckBox("Auto")
+        self.exposure_checkbox.toggled.connect(self.toggle_auto_exposure)
+
         layout_exposure = QHBoxLayout()
         layout_exposure.addWidget(self.exposure_slider)
         layout_exposure.addWidget(self.exposure_input)
         layout_exposure.addWidget(self.exposure_button)
+        layout_exposure.addWidget(self.exposure_checkbox)
 
         self.filename_input = QLineEdit(self.state.filename_stem)
 
@@ -254,6 +259,7 @@ class VideoPlayer(QWidget):
         self.camera_select.setEnabled(False)
         self.exposure_input.setEnabled(True)
         self.exposure_slider.setEnabled(True)
+        self.exposure_checkbox.setEnabled(True)
         self.setup_fps_slider(fps_val=self.state.fps)
         exposure = self.camera.exposure()
         self.setup_exposure_slider(exposure_val=exposure)
@@ -269,6 +275,7 @@ class VideoPlayer(QWidget):
         self.camera_select.setEnabled(True)
         self.exposure_input.setEnabled(False)
         self.exposure_slider.setEnabled(False)
+        self.exposure_checkbox.setEnabled(False)
         self.camera.close()
         self.init_fps_slider(
             slider=self.fps_slider,
@@ -333,6 +340,7 @@ class VideoPlayer(QWidget):
         self.exposure_button.setText("Estimating exposure time...")
         self.exposure_input.setEnabled(False)
         self.exposure_slider.setEnabled(False)
+        self.exposure_checkbox.setEnabled(False)
         self.camera.init_exposure(max_exposure=int(1_000_000 // self.state.fps))
 
     def set_record_format(self):
@@ -410,6 +418,7 @@ class VideoPlayer(QWidget):
                 self.state.exposure_tries = 0
                 self.exposure_input.setEnabled(True)
                 self.exposure_slider.setEnabled(True)
+                self.exposure_checkbox.setEnabled(True)
                 self.exposure_button.setText("Estimate Exposure Time")
 
     def update_fps_from_input(self):
