@@ -272,7 +272,8 @@ class TisCamera(Camera):
     def toggle_auto_exposure(self) -> None:
         if self.state.auto_exposure:
             self.grabber.device_property_map.set_value(ic4.PropId.EXPOSURE_AUTO, "Off")
-            self.grabber.device_property_map.set_value(ic4.PropId.GAIN_AUTO, "Off")
+            self.grabber.device_property_map.set_value(ic4.PropId.EXPOSURE_TIME, int(self.state.current_exposure))
+            self.grabber.device_property_map.set_value(ic4.PropId.GAIN_AUTO, "Continuous")
             self.state.auto_exposure = False
         else:
             self.grabber.device_property_map.set_value(ic4.PropId.EXPOSURE_AUTO, "On")
