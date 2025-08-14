@@ -272,7 +272,6 @@ class VideoPlayer(QWidget):
         self.exposure_slider.setEnabled(False)
         self.exposure_button.setEnabled(False)
         self.exposure_checkbox.setEnabled(False)
-        self.camera.close()
         self.init_fps_slider(
             slider=self.fps_slider,
             text_input=self.fps_input,
