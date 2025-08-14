@@ -34,6 +34,7 @@ class CameraState:
     max_exposure: int = XIMEA_MAX_EXPOSURE
     filename_stem: str = "frame"
     save_subfolder: str | None = None
+    auto_exposure: bool = False
 
     def sync(self, cam: xiapi.Camera):
         self.current_exposure = cam.get_exposure()
