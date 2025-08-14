@@ -206,10 +206,10 @@ class TisCamera(Camera):
             property_name=ic4.PropId.EXPOSURE_TIME,
             value=self.state.current_exposure,
         )
-        self.grabber.device_property_map.set_value(
-            ic4.PropId.ACQUISITION_FRAME_RATE, 
-            fps,
-        )
+        # self.grabber.device_property_map.set_value(
+        #     ic4.PropId.ACQUISITION_FRAME_RATE,
+        #     fps,
+        # )
         self.sink = ic4.SnapSink(
             accepted_pixel_formats=[
                 self.state.pixel_format,
