@@ -276,7 +276,7 @@ class TisCamera(Camera):
             self.grabber.device_property_map.set_value(ic4.PropId.GAIN_AUTO, "Continuous")
             self.state.auto_exposure = False
         else:
-            self.grabber.device_property_map.set_value(ic4.PropId.EXPOSURE_AUTO, "On")
+            self.grabber.device_property_map.set_value(ic4.PropId.EXPOSURE_AUTO, "Continuous")
             self.grabber.device_property_map.set_value(ic4.PropId.GAIN_AUTO, "Continuous")
             self.state.auto_exposure = True
     
